@@ -1,7 +1,6 @@
 package cn.atsukoruo.AuthorizationService.Service;
 
 
-import cn.atsukoruo.AuthorizationService.Entity.User;
 import cn.atsukoruo.AuthorizationService.Exception.ExpiredJwtException;
 import cn.atsukoruo.AuthorizationService.Exception.UserBannedException;
 import cn.atsukoruo.AuthorizationService.Exception.UserNotFoundException;
@@ -10,6 +9,7 @@ import cn.atsukoruo.AuthorizationService.Repository.UserMapper;
 import cn.atsukoruo.common.config.TokenClaimsConfig;
 import cn.atsukoruo.common.entity.AccessTokenPayload;
 import cn.atsukoruo.common.entity.RefreshTokenPayload;
+import cn.atsukoruo.common.entity.User;
 import cn.atsukoruo.common.exception.BannedRefreshTokenException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

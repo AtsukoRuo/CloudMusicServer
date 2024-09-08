@@ -15,10 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController("/token")
 public class TokenController {
-
-    // @Value("${jwt.signing.key}")
-    private String signingKey;
-
     private final TokenService tokenService;
     public TokenController(TokenService tokenService) {
         this.tokenService = tokenService;

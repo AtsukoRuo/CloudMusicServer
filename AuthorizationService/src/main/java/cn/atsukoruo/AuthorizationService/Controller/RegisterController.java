@@ -1,10 +1,11 @@
 package cn.atsukoruo.AuthorizationService.Controller;
 
-import cn.atsukoruo.AuthorizationService.Entity.User;
+
 import cn.atsukoruo.AuthorizationService.Exception.DuplicateUserException;
 import cn.atsukoruo.AuthorizationService.Exception.RegMatchException;
 import cn.atsukoruo.AuthorizationService.Service.RegisterService;
 import cn.atsukoruo.common.config.ErrorCodeConfig;
+import cn.atsukoruo.common.entity.User;
 import cn.atsukoruo.common.utils.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;

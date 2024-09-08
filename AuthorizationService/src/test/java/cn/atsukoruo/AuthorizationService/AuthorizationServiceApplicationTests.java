@@ -1,11 +1,9 @@
 package cn.atsukoruo.AuthorizationService;
 
 
-import cn.atsukoruo.AuthorizationService.Entity.User;
 import cn.atsukoruo.AuthorizationService.Repository.UserMapper;
-import cn.atsukoruo.AuthorizationService.Service.TokenService;
+import cn.atsukoruo.common.entity.User;
 import com.aliyun.oss.OSS;
-import com.aliyun.oss.OSSClient;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RKeys;
 import org.redisson.api.RedissonClient;
@@ -37,7 +35,6 @@ class AuthorizationServiceApplicationTests {
                 .username(username)
                 .nickname(nickname)
                 .password(passwordEncoder.encode("{bcrypt}"+password))
-                .salt(null)
                 .role("user")
                 .isBanned(false)
                 .isInfluencer(false)

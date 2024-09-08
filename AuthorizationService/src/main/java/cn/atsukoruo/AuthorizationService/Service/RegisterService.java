@@ -1,9 +1,10 @@
 package cn.atsukoruo.AuthorizationService.Service;
 
-import cn.atsukoruo.AuthorizationService.Entity.User;
+
 import cn.atsukoruo.AuthorizationService.Exception.DuplicateUserException;
 import cn.atsukoruo.AuthorizationService.Exception.RegMatchException;
 import cn.atsukoruo.AuthorizationService.Repository.UserMapper;
+import cn.atsukoruo.common.entity.User;
 import com.aliyun.oss.*;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -124,7 +125,6 @@ final public class RegisterService {
                 .username(username)
                 .nickname(nickname)
                 .password(passwordEncoder.encode("{bcrypt}"+password))
-                .salt(null)
                 .role("user")
                 .isBanned(false)
                 .isInfluencer(false)

@@ -1,4 +1,4 @@
-package cn.atsukoruo.AuthorizationService.Entity;
+package cn.atsukoruo.common.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,11 +16,8 @@ public class User {
     String username;
     String nickname;
     String password;
-    String salt;
     String role;
     String avatar_url;
-    String phone;
-    String introduction;
     boolean isBanned;
     boolean isInfluencer;
     Date createTime;

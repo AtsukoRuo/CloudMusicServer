@@ -17,6 +17,7 @@
 	<modules>
 		<module>AuthorizationService</module>
 		<module>Common</module>
+		<module>SocietyService</module>
 	</modules>
 	<url/>
 	<licenses>

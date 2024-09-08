@@ -41,7 +41,6 @@ public class AuthorizationServiceApplication implements DisposableBean {
     @Bean
     public PasswordEncoder passwordEncoder() {
         Map<String, PasswordEncoder> encoders = new HashMap<>();
-        encoders.put("noop", NoOpPasswordEncoder.getInstance());
         encoders.put("bcrypt", new BCryptPasswordEncoder());
         String encodingId = "bcrypt";
         return new DelegatingPasswordEncoder(encodingId, encoders);

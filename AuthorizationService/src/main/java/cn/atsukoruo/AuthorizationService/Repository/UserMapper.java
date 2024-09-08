@@ -1,7 +1,8 @@
 package cn.atsukoruo.AuthorizationService.Repository;
 
 
-import cn.atsukoruo.AuthorizationService.Entity.User;
+
+import cn.atsukoruo.common.entity.User;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
@@ -21,7 +22,7 @@ public interface UserMapper {
     int doesExistUser(String username);
 
     @Options(useGeneratedKeys = true, keyProperty = "id")
-    @Insert("INSERT INTO user(username, password, salt, avatar_url, phone, introduction, is_banned, is_influencer, create_time, role, nickname)" +
-            "VALUES(#{username}, #{password}, #{salt}, #{avatar_url}, #{phone}, #{introduction}, #{isBanned}, #{isInfluencer}, #{createTime}, #{role}, #{nickname})" )
+    @Insert("INSERT INTO user(username, password, avatar_url, is_banned, is_influencer, create_time, role, nickname)" +
+            "VALUES(#{username}, #{password}, #{avatar_url}, #{isBanned}, #{isInfluencer}, #{createTime}, #{role}, #{nickname})" )
     void insertUser(User user);
 }

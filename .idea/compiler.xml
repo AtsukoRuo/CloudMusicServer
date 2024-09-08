@@ -7,6 +7,7 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="SocietyService" />
         <module name="AuthorizationService" />
         <module name="UserService" />
         <module name="Common" />
@@ -21,6 +22,7 @@
       <module name="AuthorizationService" options="-parameters" />
       <module name="CloudMusic" options="" />
       <module name="Common" options="-parameters" />
+      <module name="SocietyService" options="-parameters" />
       <module name="UserService" options="-parameters" />
     </option>
   </component>
