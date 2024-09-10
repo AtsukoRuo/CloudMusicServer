@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: grf.2001
+    url: jdbc:mysql://122.9.7.252:3306/cloud_music_test?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
+
+logging:
+  config: classpath:log4j2.xml
+  level:
+    root: INFO
+    javax.activation: INFO
+    org.apache.catalina: INFO
+    org.apache.commons.beanutils.converters: INFO
+    org.apache.coyote.http11.Http11Processor: INFO
+    org.apache.http: INFO
+    org.apache.tomcat: INFO
+    org.springframework: INFO
+
+jwt:
+  signing-key: oJJB72CmVtKFf5h8i63xYHzPcob96L12
+
+oss:
+  endpoint: https://oss-cn-qingdao.aliyuncs.com
+  access-key:
+    id: LTAI5t9Sd2WnZzLo4BPcFjGY
+    secret: oJJB72CmVtKFf5h8i63xYHzPcob96L

@@ -96,7 +96,7 @@ public class TokenService {
     }
 
     private String buildRefreshBatchKey(int userId) {
-        return "access:" + userId;
+        return "refresh:" + userId;
     }
 
     /**
@@ -234,8 +234,8 @@ public class TokenService {
             String strBatch = (String) redissonClient.getBucket(buildRefreshBatchKey(userId)).get();
             int bannedVersion = strVersion == null ? 0 : Integer.parseInt(strVersion);
             int bannedBatch = strBatch == null ? 0 : Integer.parseInt(strBatch);
-            int version = tokenMapper.selectVersion(userId, client);
-            int batch = tokenMapper.selectBatch(userId);
+            int version = (Integer)claims.get(TokenClaimsConfig.VERSION);
+            int batch = (Integer)claims.get(TokenClaimsConfig.BATCH);
             boolean isBanned = batch <= bannedBatch || version <= bannedVersion;
 
 

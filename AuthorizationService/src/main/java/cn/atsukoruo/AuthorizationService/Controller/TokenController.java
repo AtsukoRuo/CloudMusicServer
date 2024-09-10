@@ -31,7 +31,7 @@ public class TokenController {
             newAccessToken =  tokenService.refreshAccessToken(refreshToken);
         } catch (ExpiredJwtException e) {
             log.info(e.toString());
-            return Response.fail(ErrorCodeConfig.EXPIRED_JWT ,"令牌过期");
+            return Response.fail(ErrorCodeConfig.EXPIRED_REFRESH_TOKEN ,"Refresh Token 已过期");
         } catch (UserBannedException e) {
             log.info(e.toString());
             return Response.fail(ErrorCodeConfig.USER_BANNED ,"用户被封禁");

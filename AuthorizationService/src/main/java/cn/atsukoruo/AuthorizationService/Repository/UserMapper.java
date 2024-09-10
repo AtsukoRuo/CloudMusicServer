@@ -3,10 +3,7 @@ package cn.atsukoruo.AuthorizationService.Repository;
 
 
 import cn.atsukoruo.common.entity.User;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Options;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.*;
 import org.springframework.stereotype.Repository;
 
 @Mapper
@@ -16,6 +13,10 @@ public interface UserMapper {
     User selectByUsername(String username);
 
     @Select("SELECT * FROM user WHERE id=#{userId}")
+    @Results({
+        @Result(property = "isBanned", column = "is_banned", javaType = boolean.class),
+        @Result(property = "isInfluencer", column = "is_influencer", javaType = boolean.class)
+    })
     User selectById(int userId);
 
     @Select("SELECT COUNT(*) FROM user WHERE username=#{username}")

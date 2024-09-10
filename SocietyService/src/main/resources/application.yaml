@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: SocietyService
+  profiles:
+    active: test
+server:
+  port: 30002

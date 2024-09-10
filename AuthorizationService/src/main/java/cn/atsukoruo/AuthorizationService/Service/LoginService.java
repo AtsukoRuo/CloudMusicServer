@@ -74,7 +74,6 @@ public class LoginService {
                 tokenService.insertVersion(userID, client,1);
             }
 
-
             int version = tokenService.getVersion(userID, client);
             // 我们在 RegisterController 中，将用户的 batch 添加到了数据库中
             // 因此这里的 Batch 并不会返回 null

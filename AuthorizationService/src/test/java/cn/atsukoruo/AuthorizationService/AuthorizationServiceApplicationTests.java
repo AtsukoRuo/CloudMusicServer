@@ -4,6 +4,7 @@ package cn.atsukoruo.AuthorizationService;
 import cn.atsukoruo.AuthorizationService.Repository.UserMapper;
 import cn.atsukoruo.common.entity.User;
 import com.aliyun.oss.OSS;
+import net.bytebuddy.implementation.bytecode.Throw;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RKeys;
 import org.redisson.api.RedissonClient;
@@ -52,6 +53,14 @@ class AuthorizationServiceApplicationTests {
         Iterable<String> keys = rKeys.getKeys();
         for (String key : keys) {
             System.out.println(key);
+        }
+    }
+
+    @Test
+    public void isBanned() throws Exception {
+        User user =  userMapper.selectById(136);
+        if (user.isBanned() == false) {
+            throw new Exception("不合状态");
         }
     }
 
