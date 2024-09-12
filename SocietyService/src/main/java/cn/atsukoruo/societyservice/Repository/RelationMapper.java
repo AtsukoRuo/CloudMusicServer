@@ -2,7 +2,6 @@ package cn.atsukoruo.societyservice.Repository;
 
 import org.apache.ibatis.annotations.*;
 import org.springframework.stereotype.Repository;
-
 import java.util.List;
 
 @Mapper

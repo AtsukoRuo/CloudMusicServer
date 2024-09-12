@@ -1,10 +1,9 @@
 package cn.atsukoruo.AuthorizationService;
 
 
+import cn.atsukoruo.AuthorizationService.Entity.User;
 import cn.atsukoruo.AuthorizationService.Repository.UserMapper;
-import cn.atsukoruo.common.entity.User;
 import com.aliyun.oss.OSS;
-import net.bytebuddy.implementation.bytecode.Throw;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RKeys;
 import org.redisson.api.RedissonClient;
@@ -12,8 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
-import java.sql.Date;
+import java.sql.Timestamp;
 
 
 @SpringBootTest
@@ -41,7 +39,7 @@ class AuthorizationServiceApplicationTests {
                 .isBanned(false)
                 .isInfluencer(false)
                 .avatar_url(imgUrl)
-                .createTime(new Date(System.currentTimeMillis()))
+                .createTime(new Timestamp(System.currentTimeMillis()))
                 .build();
     }
 
@@ -60,7 +58,7 @@ class AuthorizationServiceApplicationTests {
     @Test
     public void isBanned() throws Exception {
         User user =  userMapper.selectById(136);
-        if (user.isBanned() == false) {
+        if (!user.isBanned()) {
             throw new Exception("不合状态");
         }
     }
@@ -72,8 +70,7 @@ class AuthorizationServiceApplicationTests {
     private String accessKeyId;
     @Value("${oss.access-key.secret}")
     private String accessKeySecret;
+
     @Autowired
     OSS ossClient;
-
-
 }

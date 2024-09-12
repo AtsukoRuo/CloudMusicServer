@@ -5,6 +5,7 @@ import cn.atsukoruo.societyservice.Repository.PostMapper;
 import cn.atsukoruo.societyservice.Service.RelationService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -47,18 +48,19 @@ class SocietyServiceApplicationTests {
     @Test
     public void sendMessage() throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
-        Object msg = Map.of("from", 100, "to", 200, "relation", 1);
-        ProducerRecord<String, String> pr = new ProducerRecord<>("relation", objectMapper.writeValueAsString(msg));
-        kafkaTemplate.send(pr);
+        Object msg = Map.of("from", 100, "to", 200);
+        ProducerRecord<String, String> pr = new ProducerRecord<>("topic-demo", objectMapper.writeValueAsString(msg));
+        kafkaTemplate.send(pr).join();
     }
 
     @Test
     public void receiveMessage() {
-        consumer.subscribe(List.of("relation"));
-        ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
+        consumer.subscribe(List.of("topic-demo"));
+        ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(100));
         for (ConsumerRecord<String, String> record : records) {
             System.out.println("消费消息： " + record.value());
         }
+        System.out.println("end");
     }
 
     @Autowired
@@ -112,5 +114,11 @@ class SocietyServiceApplicationTests {
         for (Integer i : list) {
             System.out.println(i);
         }
+    }
+
+    @Test
+    public void getAllFollowedUser() {
+        List<Integer>  users =  relationService.getFollowedUser(1, 0, Integer.MAX_VALUE);
+        System.out.println(users);
     }
 }

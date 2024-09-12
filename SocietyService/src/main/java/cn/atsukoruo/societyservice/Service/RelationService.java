@@ -1,11 +1,11 @@
 package cn.atsukoruo.societyservice.Service;
 
-import cn.atsukoruo.common.entity.User;
 import cn.atsukoruo.common.exception.BlacklistError;
 import cn.atsukoruo.societyservice.Config.RelationConfig;
 import cn.atsukoruo.societyservice.Repository.RelationMapper;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
@@ -27,7 +27,7 @@ public class RelationService {
                            RedissonClient redissonClient,
                            PlatformTransactionManager transactionManager,
                            UserProxyService userService,
-                           PostService postService) {
+                           @Lazy PostService postService) {
         this.relationMapper = relationMapper;
         this.redissonClient = redissonClient;
         this.transactionManager = transactionManager;

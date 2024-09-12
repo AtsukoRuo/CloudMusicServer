@@ -40,3 +40,10 @@ eureka:
     instance-id: society-service
     prefer-ip-address: true
 
+post:
+  inbox:
+    maxSize: 100
+    maxDay: 31
+  outbox:
+    maxSize: 200
+    maxDay: 7

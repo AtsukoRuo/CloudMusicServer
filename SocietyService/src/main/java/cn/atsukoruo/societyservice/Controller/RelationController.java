@@ -1,6 +1,5 @@
 package cn.atsukoruo.societyservice.Controller;
 import cn.atsukoruo.common.config.ErrorCodeConfig;
-import cn.atsukoruo.common.entity.User;
 import cn.atsukoruo.common.exception.BlacklistError;
 import cn.atsukoruo.common.utils.Response;
 import cn.atsukoruo.societyservice.Service.RelationService;
