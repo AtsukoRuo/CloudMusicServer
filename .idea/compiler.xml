@@ -8,12 +8,15 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="SocietyService" />
+        <module name="MusicService" />
         <module name="AuthorizationService" />
         <module name="UserService" />
         <module name="Common" />
+        <module name="ServiceSupporter" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="EurekaServer" target="17" />
       <module name="UserService" target="17" />
     </bytecodeTargetLevel>
   </component>
@@ -22,6 +25,9 @@
       <module name="AuthorizationService" options="-parameters" />
       <module name="CloudMusic" options="" />
       <module name="Common" options="-parameters" />
+      <module name="EurekaServer" options="-parameters" />
+      <module name="MusicService" options="-parameters" />
+      <module name="ServiceSupporter" options="-parameters" />
       <module name="SocietyService" options="-parameters" />
       <module name="UserService" options="-parameters" />
     </option>

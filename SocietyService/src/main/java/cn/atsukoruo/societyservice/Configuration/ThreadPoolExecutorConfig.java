@@ -38,8 +38,6 @@ public class ThreadPoolExecutorConfig {
 class BusinessContextDecorator implements TaskDecorator {
     @Override
     public Runnable decorate(Runnable runnable) {
-        return () -> {
-            runnable.run();
-        };
+        return runnable::run;
     }
 }

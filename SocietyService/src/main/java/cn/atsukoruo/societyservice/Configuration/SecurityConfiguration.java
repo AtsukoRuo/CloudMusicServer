@@ -77,10 +77,8 @@ public class SecurityConfiguration  {
 @Slf4j
 @Component
 class JwtAuthenticationFilter extends OncePerRequestFilter {
-
     final private RedissonClient redissonClient;
     final private ObjectMapper objectMapper = new ObjectMapper();
-
     @Autowired
     public JwtAuthenticationFilter(RedissonClient redissonClient) {
         this.redissonClient = redissonClient;

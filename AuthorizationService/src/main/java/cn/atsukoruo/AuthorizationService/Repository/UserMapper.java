@@ -1,14 +1,19 @@
 package cn.atsukoruo.AuthorizationService.Repository;
 
 
-
-import cn.atsukoruo.common.entity.User;
+import cn.atsukoruo.AuthorizationService.Entity.User;
+import cn.atsukoruo.common.entity.UserInfo;
 import org.apache.ibatis.annotations.*;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 @Mapper
 @Repository
 public interface UserMapper {
+    @Select("SELECT is_influencer FROM user WHERE id=#{userId}")
+    Boolean isInfluencer(int userId);
+
     @Select("SELECT * FROM user WHERE username=#{username}")
     User selectByUsername(String username);
 
@@ -19,6 +24,9 @@ public interface UserMapper {
     })
     User selectById(int userId);
 
+    @SelectProvider(type = UserProvider.class, method = "selectAllUsers")
+    List<UserInfo> selectAllUsers(List<Integer> users);
+
     @Select("SELECT COUNT(*) FROM user WHERE username=#{username}")
     int doesExistUser(String username);
 
@@ -26,4 +34,6 @@ public interface UserMapper {
     @Insert("INSERT INTO user(username, password, avatar_url, is_banned, is_influencer, create_time, role, nickname)" +
             "VALUES(#{username}, #{password}, #{avatar_url}, #{isBanned}, #{isInfluencer}, #{createTime}, #{role}, #{nickname})" )
     void insertUser(User user);
+
+
 }

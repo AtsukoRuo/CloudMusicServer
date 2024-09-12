@@ -11,6 +11,7 @@ import org.redisson.config.Config;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
@@ -18,6 +19,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.web.client.RestClient;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,7 +33,7 @@ public class SocietyServiceApplication {
     // TODO 帖子删除功能
     // TODO 评论
     // TODO 点赞、取消点赞
-    // TODO 获取关注的人、获取粉丝、获取关注数、获取粉丝数
+    // 获取关注的人、获取粉丝、获取关注数、获取粉丝数
     // 关注
     // 取关
     // 拉黑
@@ -48,9 +50,7 @@ public class SocietyServiceApplication {
                         "redis://114.116.218.95:6379",
                         "redis://116.63.9.166:6379",
                         "redis://114.116.204.34:6379",
-                        "redis://114.116.220.197:6379",
-                        "redis://122.9.36.231:6379",
-                        "redis://122.9.7.252:6379")
+                        "redis://114.116.220.197:6379")
                 .setSlaveConnectionMinimumIdleSize(1)
                 .setMasterConnectionMinimumIdleSize(1)
                 .setMasterConnectionPoolSize(8)
@@ -59,5 +59,10 @@ public class SocietyServiceApplication {
         return Redisson.create(config);
     }
 
+    @LoadBalanced
+    @Bean
+    RestClient.Builder restClientBuilder() {
+        return RestClient.builder();
+    }
 
 }

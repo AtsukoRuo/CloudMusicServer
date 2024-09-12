@@ -3,6 +3,8 @@ package cn.atsukoruo.societyservice.Repository;
 import org.apache.ibatis.annotations.*;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Mapper
 @Repository
 public interface RelationMapper {
@@ -17,9 +19,21 @@ public interface RelationMapper {
     void updateRelation(int from, int to, int newRelation);
 
 
-    // TODO 这个上个读锁
     @Select("SELECT `relation` FROM `relationship` WHERE `from` = #{from} AND `to` = #{to}")
     Integer getRelation(int from ,int to);
 
 
+    @Select("SELECT COUNT(*) FROM `relationship` WHERE `from`=#{user} AND (relation = 1 OR relation = 4)")
+    Integer getFollowedUserNum(Integer user);
+
+
+    @Select("SELECT COUNT(*) FROM `relationship` WHERE `from`=#{user} AND (relation = 0 OR relation = 4)")
+    Integer getFollowingUserNum(Integer user);
+
+
+    @Select("SELECT `to` FROM `relationship` WHERE `from`=#{user} AND (`relation`=1 OR `relation`=4) ORDER BY `to` LIMIT #{from}, #{size}")
+    List<Integer> getFollowedUser(int user, int from, int size);
+
+    @Select("SELECT `to` FROM `relationship` WHERE `from`=#{user} AND (`relation` = 0 OR `relation` = 4) ORDER BY `to` LIMIT #{from}, #{size}")
+    List<Integer> getFollowingUser(int user, int from, int size);
 }

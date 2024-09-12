@@ -64,30 +64,27 @@ public class RelationController {
 
 
     @GetMapping("/followed/num")
-    public Response<Object> getFollowedUserNum() {
-        int user = getUserFromAuth();
+    public Response<Object> getFollowedUserNum(Integer user) {
+        int i = 10;
         int result = relationService.getFollowedUserNum(user);
         return Response.success(result);
     }
 
     @GetMapping("/following/num")
-    public Response<Object> getFollowingUserNum() {
-        int user = getUserFromAuth();
+    public Response<Object> getFollowingUserNum(Integer user) {
         int result = relationService.getFollowingUserNum(user);
         return Response.success(result);
     }
 
     @GetMapping("/followed/user")
-    public Response<Object> getFollowedUser() {
-        int user = getUserFromAuth();
-        List<User> users = relationService.getFollowedUser(user);
+    public Response<Object> getFollowedUser(Integer user, Integer from, Integer size) {
+        List<Integer> users = relationService.getFollowedUser(user, from, size);
         return Response.success(users);
     }
 
     @GetMapping("/following/user")
-    public Response<Object> getFollowingUser() {
-        int user = getUserFromAuth();
-        List<User> users = relationService.getFollowingUser(user);
+    public Response<Object> getFollowingUser(Integer user, Integer from, Integer size) {
+        List<Integer> users = relationService.getFollowingUser(user, from, size);
         return Response.success(users);
     }
 

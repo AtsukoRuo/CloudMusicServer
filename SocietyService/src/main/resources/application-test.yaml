@@ -25,3 +25,18 @@ oss:
   access-key:
     id: LTAI5t9Sd2WnZzLo4BPcFjGY
     secret: oJJB72CmVtKFf5h8i63xYHzPcob96L
+
+eureka:
+  client:
+    region: shandong
+    availability-zones:
+      shandong: linyi
+    service-url:
+      linyi: http://localhost:30010/eureka/
+  instance:
+    metadata-map:
+      zone: linyi
+    appname: society-service
+    instance-id: society-service
+    prefer-ip-address: true
+

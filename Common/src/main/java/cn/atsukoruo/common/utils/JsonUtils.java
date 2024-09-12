@@ -18,7 +18,7 @@ public class JsonUtils {
      * @param json
      * @return
      */
-    public static Map<String, Object> pars1eObject(String json) {
+    public static Map<String, Object> parseObject(String json) {
         if (StringUtils.hasText(json)) {
             return parseObject(json, Map.class);
         }

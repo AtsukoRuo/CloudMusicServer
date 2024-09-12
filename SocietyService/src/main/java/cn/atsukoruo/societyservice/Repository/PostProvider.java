@@ -24,8 +24,6 @@ public class PostProvider {
             String value = "(" + inbox + "," + id + ",'" + df.format(date) +"'," +  from + "),";
             builder.append((value));
         }
-        String ret = sql + builder.substring(0, builder.length() - 1);
-        log.debug(ret);
-        return ret;
+        return sql + builder.substring(0, builder.length() - 1);
     }
 }

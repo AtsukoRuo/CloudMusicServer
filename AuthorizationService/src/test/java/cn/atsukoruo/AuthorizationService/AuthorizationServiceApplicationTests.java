@@ -25,12 +25,13 @@ class AuthorizationServiceApplicationTests {
 
 
     @Test
-    public void insertUser() {
-        User user = buildUser("123", "123123", "123123", "123123");
-
-        userMapper.insertUser(user);
-        System.out.println(user.getId());
+    public void insertTestUser() {
+        for (int i = 0; i < 100; i++) {
+            User user = buildUser("test" + i, "test" + i, "grf.2001", "");
+            userMapper.insertUser(user);
+        }
     }
+
     private User buildUser(String username, String nickname, String password, String imgUrl) {
         return User.builder()
                 .username(username)

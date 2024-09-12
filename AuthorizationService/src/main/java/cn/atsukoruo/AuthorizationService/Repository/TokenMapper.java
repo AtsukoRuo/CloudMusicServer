@@ -22,8 +22,8 @@ public interface TokenMapper {
     public int addBatch(int userId, int diff);
 
     @Insert("INSERT INTO token_version(user_id, client, version) VALUES(#{userId}, #{client}, #{version})")
-    public int insertVersion(int userId, String client, int version);
+    public void insertVersion(int userId, String client, int version);
 
     @Insert("INSERT INTO token_batch(user_id, batch) VALUES(#{userId}, #{batch})")
-    public int insertBatch(int userId, int batch);
+    public void insertBatch(int userId, int batch);
 }

@@ -7,18 +7,12 @@ import lombok.NoArgsConstructor;
 
 import java.sql.Date;
 
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 @Data
-public class User {
+public class UserInfo {
     int id;
-    String username;
     String nickname;
-    String password;
-    String role;
     String avatar_url;
-    boolean isBanned;
-    boolean isInfluencer;
-    Date createTime;
 }

@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: ServiceSupporter
+  profiles:
+    active: test
+server:
+  port: 30010
+

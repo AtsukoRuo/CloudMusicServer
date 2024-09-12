@@ -19,14 +19,14 @@ public class RelationService {
     private final RedissonClient redissonClient;
     private final PlatformTransactionManager transactionManager;
 
-    private final UserService userService;
+    private final UserProxyService userService;
     private final PostService postService;
 
 
     public RelationService(RelationMapper relationMapper,
                            RedissonClient redissonClient,
                            PlatformTransactionManager transactionManager,
-                           UserService userService,
+                           UserProxyService userService,
                            PostService postService) {
         this.relationMapper = relationMapper;
         this.redissonClient = redissonClient;
@@ -172,19 +172,19 @@ public class RelationService {
 
 
     public int getFollowedUserNum(int user) {
-        return 0;
+        return relationMapper.getFollowedUserNum(user);
     }
 
     public int getFollowingUserNum(int user) {
-        return 0;
+        return relationMapper.getFollowingUserNum(user);
     }
 
-    public List<User> getFollowedUser(int user) {
-        return null;
+    public List<Integer> getFollowedUser(int user, int from, int size) {
+        return relationMapper.getFollowedUser(user, from, size);
     }
 
-    public List<User> getFollowingUser(int user) {
-        return null;
+    public List<Integer> getFollowingUser(int user, int from, int size) {
+        return relationMapper.getFollowingUser(user, from, size);
     }
 
     private String buildKey(int id) {

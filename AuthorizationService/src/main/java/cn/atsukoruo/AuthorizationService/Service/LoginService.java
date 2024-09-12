@@ -2,13 +2,13 @@ package cn.atsukoruo.AuthorizationService.Service;
 
 
 
+import cn.atsukoruo.AuthorizationService.Entity.User;
 import cn.atsukoruo.AuthorizationService.Exception.PasswordNotCorrectedException;
 import cn.atsukoruo.AuthorizationService.Exception.UserBannedException;
 import cn.atsukoruo.AuthorizationService.Exception.UserNotFoundException;
 import cn.atsukoruo.AuthorizationService.Repository.UserMapper;
 import cn.atsukoruo.common.entity.AccessTokenPayload;
 import cn.atsukoruo.common.entity.RefreshTokenPayload;
-import cn.atsukoruo.common.entity.User;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -7,7 +7,6 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.*;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,7 +30,7 @@ public class KafkaConfiguration {
      */
     private static Map<String, Object> buildProducerProperties() {
         Map<String, Object> properties = new HashMap<>();
-        properties.put("bootstrap.servers", "114.116.204.34:9092");
+        properties.put("bootstrap.servers", "122.9.7.252:9092");
         properties.put("acks", "all");
         properties.put("retries", 0);
         properties.put("batch.size", 16384);
@@ -60,7 +59,7 @@ public class KafkaConfiguration {
      */
     private static Map<String, Object> buildConsumerProperties() {
         Map<String, Object> properties = new HashMap<>();
-        properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "114.116.204.34:9092");
+        properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "122.9.7.252:9092");
         properties.put(ConsumerConfig.GROUP_ID_CONFIG, "test");
         properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
         properties.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "60000");

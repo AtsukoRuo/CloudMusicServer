@@ -7,16 +7,19 @@ import org.springframework.stereotype.Service;
 @Service
 public class KafkaMessageReaper {
 
-//    @Async
-//    @PostConstruct
-//    public void receive() {
-//        while(true) {
-//            try {
-//
-//            } finally {
-//
-//            }
-//        }
-//    }
+    @Async
+    public void receive() {
+        while(true) {
+            try {
 
+            } finally {
+
+            }
+        }
+    }
+
+    @PostConstruct
+    private void init() {
+        receive();
+    }
 }

@@ -1,10 +1,10 @@
 package cn.atsukoruo.AuthorizationService.Service;
 
 
+import cn.atsukoruo.AuthorizationService.Entity.User;
 import cn.atsukoruo.AuthorizationService.Exception.DuplicateUserException;
 import cn.atsukoruo.AuthorizationService.Exception.RegMatchException;
 import cn.atsukoruo.AuthorizationService.Repository.UserMapper;
-import cn.atsukoruo.common.entity.User;
 import com.aliyun.oss.*;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -16,10 +16,10 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Date;
+import java.sql.Timestamp;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -117,7 +117,7 @@ final public class RegisterService {
     private String generateRandomImageFilename(String originFilename) {
         int index = originFilename.lastIndexOf('.');
         String ext = originFilename.substring(index);
-        return UUID.randomUUID().toString() + ext;
+        return UUID.randomUUID() + ext;
     }
 
     private User buildUser(String username, String nickname, String password, String imgUrl) {
@@ -129,7 +129,7 @@ final public class RegisterService {
                 .isBanned(false)
                 .isInfluencer(false)
                 .avatar_url(imgUrl)
-                .createTime(new Date(System.currentTimeMillis()))
+                .createTime(new Timestamp(System.currentTimeMillis()))
                 .build();
     }
 }
