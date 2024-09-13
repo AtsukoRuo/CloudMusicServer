@@ -65,11 +65,7 @@ class SocietyServiceApplicationTests {
 
     @Autowired
     PostMapper postMapper;
-    @Test
-    public void copyToInbox() {
 
-        postMapper.insertToInbox(1, 1, List.of(1, 2, 3));
-    }
 
     @Autowired
     private RestClient.Builder restClientBuilder;

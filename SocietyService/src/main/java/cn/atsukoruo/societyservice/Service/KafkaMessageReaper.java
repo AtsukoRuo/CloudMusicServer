@@ -42,15 +42,16 @@ public class KafkaMessageReaper {
     void handlePostMessage() {
         while(true) {
             try {
-                ConsumerRecords<String, String> records =  consumer.poll(Duration.ofSeconds(120));
+                ConsumerRecords<String, String> records =  consumer.poll(Duration.ofSeconds(10));
                 for (ConsumerRecord<String, String> record : records) {
                     String value = record.value();
                     Map<String, Object> message = JsonUtils.parseObject(value);
                     Integer user = (Integer) message.get("user");
                     Integer post = (Integer) message.get("postId");
+                    Integer timestamp = (Integer) message.get("timestamp");
                     executor.execute(() -> {
                         try {
-                            postService.syncPublishPostToFollowedUser(user, post);
+                            postService.syncPublishPostToFollowedUser(user, post, timestamp);
                         } catch (Exception e) {
                             log.error(e.toString());
                             // TODO 重新投递到重试队列中
@@ -62,6 +63,10 @@ public class KafkaMessageReaper {
                 }
             } catch (Exception e) {
                 log.error(e.toString());
+                if (e instanceof  IllegalStateException) {
+                    e.printStackTrace();
+                    break;
+                }
             }
         }
     }

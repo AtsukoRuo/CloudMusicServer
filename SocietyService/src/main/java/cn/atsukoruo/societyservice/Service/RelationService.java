@@ -92,7 +92,7 @@ public class RelationService {
                 }
                 if (!userService.isInfluencer(unfollowedUser)) {
                     // 对方不是大 V，那么就从自己的收件箱中删除有关他的任何帖子
-                    postService.deletePostFromInbox(user, unfollowedUser);
+                    postService.deletePostFromUserInInbox(user, unfollowedUser);
                 }
             }
             transactionManager.commit(status);
@@ -126,7 +126,7 @@ public class RelationService {
                     relationMapper.updateRelation(blacklistedUser, user, RelationConfig.BLACKLISTED);
                     if (!userService.isInfluencer(blacklistedUser)) {
                         // 对方不是大 V，那么就从自己的收件箱中删除有关他的任何帖子
-                        postService.deletePostFromInbox(user, blacklistedUser);
+                        postService.deletePostFromUserInInbox(user, blacklistedUser);
                     }
                     break;
                 case RelationConfig.BLACKLISTING:
