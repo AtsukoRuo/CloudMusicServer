@@ -10,6 +10,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.redisson.api.RLock;
 import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -21,28 +22,25 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Timestamp;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
 
 @Service
 public class PostService {
     private final PostMapper postMapper;
     private final PlatformTransactionManager transactionManager;
-
     private final RedissonClient redissonClient;
-
     private final UserProxyService userProxyService;
-
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final RelationService relationService;
-
-    static final private String BUCKET_NAME = "atsukoruo-oss-image";
-
-
-
+    private final Executor executor;
     private final OSS ossClient;
+    static final private String BUCKET_NAME = "atsukoruo-oss-image";
 
     public PostService(PostMapper postMapper,
                        PlatformTransactionManager transactionManager,
@@ -50,7 +48,8 @@ public class PostService {
                        OSS ossClient,
                        UserProxyService userProxyService,
                        KafkaTemplate<String, String> kafkaTemplate,
-                       @Lazy RelationService relationService) {
+                       @Lazy RelationService relationService,
+                       @Qualifier("post-thread-pool") Executor executor) {
         this.postMapper = postMapper;
         this.transactionManager = transactionManager;
         this.redissonClient = redissonClient;
@@ -58,42 +57,117 @@ public class PostService {
         this.userProxyService = userProxyService;
         this.kafkaTemplate = kafkaTemplate;
         this.relationService = relationService;
+        this.executor = executor;
     }
 
 
     /**
-     * 将 outbox 所指定的用户的发件箱中的帖子，发送到 inbox 所指定用户的收件箱中
+     * 将 outbox 所指定的用户的发件箱中的所有帖子，发送到 inbox 所指定用户的收件箱中
      */
-    public void copyToInbox(int outbox, int inbox) {
+    public void copyAllPostsToInbox(int outbox, int inbox) {
         List<Post> posts = postMapper.getPostInfoOfUser(outbox);
-        for (Post post : posts) {
-            postMapper.insertToInbox(
-                    outbox,
-                    post.getId(),
-                    post.getCreateTime().getTime(),
-                    List.of(inbox));
-        }
+        postMapper.copyAllPostsToInbox(outbox, inbox, posts);
     }
 
     /**
-     * 从 userId 的收件箱中，移除 removedUserId 所有的帖子
+     * 从 userId 的收件箱中，移除 removedUser 所有的帖子
      */
     public void deletePostFromUserInInbox(int user, int removedUser) {
         postMapper.deletePostFromUserInInbox(user, removedUser);
     }
 
     /**
-     * 从 userId 的发件箱中，软删除 postId 的帖子
+     * 直接从数据库中获取 user 发布的帖子，按照时间排序，获取 [from, from + size] 个
+     */
+    public List<Post> retrievePost(int user, long timestamp, int size) {
+        return postMapper.retrievePost(user, new Timestamp(timestamp), size, false);
+    }
+
+
+    /**
+     *  获取 user 在 inbox 中的帖子，按照时间排序，获取 [from, from + size] 个
+     */
+    public List<Post> retrievePostFromInbox(int user, long timestamp, int size) {
+        // 保证从 inbox 中获取到的帖子都是没有标记过删除的。
+        List<Integer> ids = postMapper.getPostIdsFromInbox(user, new Timestamp(timestamp), size);
+        return postMapper.selectAllPostByIds(ids, false);
+    }
+
+    @Value("${post.outbox.maxSize}")
+    private int outboxMaxSize;
+
+    /**
+     * 获取 user 发布的帖子，按照时间排序，获取 [from, from + size] 个
+     * 其中涉及到缓存
+     */
+    public List<Post> retrievePostFromOutbox(int user, long timestamp, int size) {
+        long lastTimestamp = timestamp;
+        RScoredSortedSet<Integer> set =  redissonClient.getScoredSortedSet(buildOutboxCacheKey(user));
+        List<Post> results = new ArrayList<>();
+
+        // 重建缓存
+        if (!set.isExists()) {
+            RLock lock = redissonClient.getLock(buildOutboxCacheLockKey(user));
+            try {
+                lock.lock();
+                if (!set.isExists())
+                    rebuildOutboxCache(user);
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        // 先从缓存从获取
+        if (lastTimestamp >= set.first()) {
+            // outbox 中不存储删除过的 post
+            List<Integer> ids = set
+                    .valueRangeReversed(lastTimestamp, true, Double.NEGATIVE_INFINITY, false)
+                    .stream().toList();
+            List<Post> posts =  postMapper.selectAllPostByIds(ids, false);
+            results.addAll(posts);
+            size -= posts.size();
+            if (posts.size() != 0)
+                lastTimestamp = posts.get(0).getCreateTime().getTime();
+        }
+
+        // 再从 outbox 中获取
+        if (size > 0) {
+            List<Post> posts = postMapper.retrievePost(user, new Timestamp(lastTimestamp), size, false);
+            results.addAll(posts);
+        }
+        return results;
+    }
+
+    private void rebuildOutboxCache(int user) {
+        List<Post> posts = postMapper.getPostInfoOfUser(user, new Timestamp(Long.MAX_VALUE), outboxMaxSize);
+        for (var post : posts) {
+            addPostToOutboxCache(user, post);
+        }
+    }
+
+    private void addPostToOutboxCache(int user, Post post) {
+        RScoredSortedSet<Integer> set = redissonClient.getScoredSortedSet(buildOutboxCacheKey(user));
+        if (!set.isExists())
+            return;
+        set.add(Double.longBitsToDouble(post.getCreateTime().getTime()),
+                post.getId());
+        while (set.size() > outboxMaxSize) {
+            // 删除分数最小的成员
+            set.pollFirst();
+        }
+    }
+
+    /**
+     * 从 userId 的发件箱中，软删除 postId 的帖子，并删除 outbox 缓存（有的话）中的对应帖子
      */
     public void deletePostSoftlyInOutbox(int user, int post) {
         TransactionStatus status = transactionManager.getTransaction(new DefaultTransactionDefinition());
         try {
             postMapper.deletePostSoftlyInOutbox(user, post);
-            String outboxKey = buildOutboxKey(user);
+            String outboxKey = buildOutboxCacheKey(user);
             RScoredSortedSet<Integer> set = redissonClient.getScoredSortedSet(outboxKey);
             if (set.isExists())
-                return;
-            set.remove(outboxKey);
+                set.remove(outboxKey);
             transactionManager.commit(status);
         } catch (Exception e){
             transactionManager.rollback(status);
@@ -110,15 +184,13 @@ public class PostService {
             long timestamp = post.getCreateTime().getTime();
             Integer postId =  postMapper.insertPost(post);
             if (!userProxyService.isInfluencer(user)) {
-                // 对于普通用户，异步推送到各个关注者的 inbox 缓存中
+                // 对于普通用户，还要异步推送到各个关注者的 inbox 缓存中
                 asyncPublishPostToFollowedUser(user, postId, timestamp);
-            } else {
-                // 对于大 V 用户，直接写入到 outbox 缓存中即可
-                RScoredSortedSet<Integer> set = redissonClient.getScoredSortedSet(buildOutboxKey(user));
-                if (set != null) {
-                    set.add(timestamp, postId);
-                }
             }
+
+            // 对于大 V 用户，直接写入到 outbox 缓存中即可
+            // 普通用户也将帖子写入到 outbox 缓存中
+            addPostToOutboxCache(user, post);
             transactionManager.commit(status);
         } catch (Exception e) {
             if (!(e instanceof ClientException || e instanceof OSSException) && imgUrl != null) {
@@ -130,7 +202,7 @@ public class PostService {
     }
 
     /**
-     * 向发件人的关注者的推送帖子
+     * 向发件人的关注者的 inbox 推送帖子（普通用户）
      * 使用 Kafka 做异步推送
      * @param user      发件人
      * @param postId    帖子的 ID
@@ -145,50 +217,15 @@ public class PostService {
     }
 
     /**
-     * 向发件人的关注者的 inbox 添加该帖子
-     * 并尝试向 inbox 缓存中添加该帖子
+     * 向发件人的关注者（不包括自己）的 inbox 添加该帖子
      * @param user      发件人
      * @param postId    帖子的 ID
      * @param timestamp  帖子的创建时间
      */
     public void syncPublishPostToFollowedUser(int user, int postId, long timestamp) {
         List<Integer> users = relationService.getFollowedUser(user, 0, Integer.MAX_VALUE);
-        postMapper.insertToInbox(user, postId, timestamp, users);
-        for (int followedUser : users) {
-            RScoredSortedSet<Integer> set = redissonClient.getScoredSortedSet(buildOutboxKey(followedUser));
-            if (set != null) {
-                set.add(timestamp, postId);
-            }
-        }
+        postMapper.publishPostToFollowedUser(user, postId, timestamp, users);
     }
-
-
-    @Value("${post.outbox.maxSize}")
-    private int outboxMaxSize;
-
-    @Value("${post.outbox.maxDay}")
-    private int outboxMaxDay;
-
-    private void buildOutboxCache(int user, int maxSize, int day) {
-        RScoredSortedSet<String> set =  redissonClient.getScoredSortedSet(buildOutboxKey(user));
-        if (set == null) {
-            RLock lock =  redissonClient.getLock(buildOutboxLockKey(user));
-            lock.lock();
-            try {
-                // 这里考虑到了并发的情况
-                if (set != null) {
-                    return;
-                }
-            } finally {
-                lock.unlock();
-            }
-        }
-    }
-
-    private void buildInboxCache(int user, int maxSize, int day) {
-
-    }
-
 
     private String uploadPicture(MultipartFile file) throws IOException {
         InputStream imageStream = file.getInputStream();
@@ -213,20 +250,104 @@ public class PostService {
                 .userId(user).build();
     }
 
-
-    private String buildOutboxKey(int user) {
+    private String buildOutboxCacheKey(int user) {
         return "ob" + user;
     }
 
-    private String buildInboxKey(int user) {
-        return "ib" + user;
-    }
-
-    private String buildOutboxLockKey(int user) {
+    private String buildOutboxCacheLockKey(int user) {
         return "obl" + user;
     }
 
-    private String buildInboxLockKey(int user) {
-        return "inl" + user;
+    public List<Post> feed(int user, long timestamp, int size) {
+        // 帖子的三种来源：自己发布的帖子、收件箱、大 V 的发件箱
+        List<Integer> followingUsers =  relationService.getFollowingUser(user, 0, Integer.MAX_VALUE);
+        List<Integer> influencerUsers = new ArrayList<>();
+
+
+        HashMap<Integer, Boolean> hasMoreForInfluencer = new HashMap<>();
+        followingUsers.stream().filter(userProxyService::isInfluencer).forEach(influencer -> {
+            hasMoreForInfluencer.put(influencer, true);
+            influencerUsers.add(influencer);
+        });
+        AtomicBoolean hasMoreForMe = new AtomicBoolean(true);
+        AtomicBoolean hasMoreForNormalUser = new AtomicBoolean(true);
+
+        List<Post> res = new ArrayList<>();
+        AtomicInteger hasMoreNum = new AtomicInteger(followingUsers.size());
+        AtomicInteger total = new AtomicInteger(0);
+        AtomicLong lastTimestamp = new AtomicLong(timestamp);
+
+
+        while(total.get() < size) {
+            List<CompletableFuture<List<Post>>> futureList = new ArrayList<>();
+            List<Post> posts = new ArrayList<>();
+
+            // 处理自己的帖子，直接从 outbox 中构建即可
+            if (hasMoreForMe.get()) {
+                CompletableFuture<List<Post>> myPost = CompletableFuture
+                        .supplyAsync(() -> retrievePostFromOutbox(user, timestamp, size), executor)
+                        .thenApply(results -> {
+                            if (results.size() < size) {
+                                // 没有更多的帖子了
+                                hasMoreForMe.set(false);
+                            }
+                            hasMoreNum.decrementAndGet();
+                            total.addAndGet(results.size());
+                            posts.addAll(results);
+                            return null;
+                        });
+                futureList.add(myPost);
+            }
+
+
+            // 处理普通用户的帖子
+            if (hasMoreForNormalUser.get()) {
+                CompletableFuture<List<Post>> future = CompletableFuture
+                        .supplyAsync(() -> retrievePostFromInbox(user, lastTimestamp.get(), size), executor)
+                        .thenApply(results -> {
+                            int num = results.size();
+                            if (num < size) {
+                                hasMoreForNormalUser.set(false);
+                            }
+                            hasMoreNum.decrementAndGet();
+                            total.addAndGet(num);
+                            posts.addAll(results);
+                            return null;
+                        });
+                futureList.add(future);
+            }
+
+            // 处理大 V 用户的帖子
+            for (int influencer : influencerUsers) {
+                if (!hasMoreForInfluencer.get(influencer))
+                    continue;
+                CompletableFuture<List<Post>> future = CompletableFuture
+                        .supplyAsync(() -> retrievePostFromOutbox(influencer, lastTimestamp.get(), size))
+                        .thenApply(results -> {
+                            int num = results.size();
+                            if (num < size) {
+                                hasMoreForInfluencer.put(influencer, false);
+                            }
+                            hasMoreNum.decrementAndGet();
+                            total.addAndGet(num);
+                            posts.addAll(results);
+                            return null;
+                        });
+                futureList.add(future);
+            }
+
+            CompletableFuture<Void> allFutures = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
+            allFutures.join();
+            // 进行排序
+            posts.sort(Comparator.comparing(Post::getCreateTime));
+
+            res.addAll(posts);
+            if (hasMoreNum.get() == 0) {
+                res.add(0, null);
+                break;
+            }
+            lastTimestamp.set(posts.get(posts.size() - 1).getCreateTime().getTime());
+        }
+        return res;
     }
 }

@@ -5,6 +5,11 @@ spring:
     password: grf.2001
     url: jdbc:mysql://122.9.7.252:3306/cloud_music_test?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
 
+mybatis:
+  configuration:
+    #下划线转驼峰
+    map-underscore-to-camel-case: true
+
 logging:
   config: classpath:log4j2.xml
   level:
@@ -41,9 +46,6 @@ eureka:
     prefer-ip-address: true
 
 post:
-  inbox:
-    maxSize: 100
-    maxDay: 31
   outbox:
-    maxSize: 200
-    maxDay: 7
+    # 为了测试，将 maxSize 设置为 1
+    maxSize: 1

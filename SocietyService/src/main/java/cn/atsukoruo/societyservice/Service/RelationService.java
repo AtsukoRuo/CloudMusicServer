@@ -61,8 +61,8 @@ public class RelationService {
                 }
             }
             if (!userService.isInfluencer(favoriteUserId)) {
-                // 如果对方不是大 V，那么就将帖子同步推送过来
-                postService.copyToInbox(favoriteUserId, followerId);
+                // 如果对方不是大 V，那么就将它的所有帖子同步推送过来
+                postService.copyAllPostsToInbox(favoriteUserId, followerId);
             }
             transactionManager.commit(status);
         } catch (Exception e) {
@@ -183,6 +183,10 @@ public class RelationService {
         return relationMapper.getFollowedUser(user, from, size);
     }
 
+    /**
+     * 返回 user 的关注列表，返回从 [from, from + size]，按照用户 id 排序
+     * 这样做其实不妥，应该按照关注更新时间来进行排序的。但没时间处理了
+     */
     public List<Integer> getFollowingUser(int user, int from, int size) {
         return relationMapper.getFollowingUser(user, from, size);
     }

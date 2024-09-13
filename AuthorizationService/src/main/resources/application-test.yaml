@@ -10,9 +10,11 @@ spring:
     username: root
     password: grf.2001
     url: jdbc:mysql://122.9.7.252:3306/cloud_music_test?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
-mybatis:
-  mapper-locations: classpath:mapper/*.xml
 
+mybatis:
+  configuration:
+    #下划线转驼峰
+    map-underscore-to-camel-case: true
 
 jwt:
   signing-key: oJJB72CmVtKFf5h8i63xYHzPcob96L12

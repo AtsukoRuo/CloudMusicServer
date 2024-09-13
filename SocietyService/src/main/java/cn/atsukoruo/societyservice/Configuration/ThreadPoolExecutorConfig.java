@@ -33,6 +33,19 @@ public class ThreadPoolExecutorConfig {
         executor.initialize();
         return executor;
     }
+
+    @Bean("post-thread-pool")
+    public Executor postTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(CORE_THREAD_SIZE);
+        executor.setMaxPoolSize(MAX_THREAD_SIZE);
+        executor.setQueueCapacity(WORK_QUEUE);
+        executor.setKeepAliveSeconds(KEEP_ALIVE_SECONDS);
+        executor.setThreadNamePrefix("post-thread-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
+        executor.initialize();
+        return executor;
+    }
 }
 
 class BusinessContextDecorator implements TaskDecorator {
