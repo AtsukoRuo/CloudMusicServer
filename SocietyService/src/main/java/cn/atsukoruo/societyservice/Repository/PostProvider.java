@@ -3,15 +3,8 @@ package cn.atsukoruo.societyservice.Repository;
 import cn.atsukoruo.societyservice.Entity.Post;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.jdbc.SQL;
-import org.bouncycastle.util.Times;
-
-import java.sql.Date;
-import java.sql.Timestamp;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+import java.sql.Timestamp;;
 import java.util.List;
 
 @NoArgsConstructor
@@ -50,13 +43,13 @@ public class PostProvider {
            String value = id + ",";
            builder.append(value);
         }
-        String postfix = keepDeleted ? ")" : "AND is_deleted=0)" + "ORDER BY create_time";
+        String postfix = keepDeleted ? ")" : "AND is_deleted=0)" + "ORDER BY create_time DESC";
         return sql + builder.substring(0, builder.length() - 1) + postfix;
     }
 
     public String retrievePost(int user, Timestamp timestamp, int size, boolean keepDeleted) {
         return keepDeleted ?
-            "SELECT * FROM post WHERE user_id=" + user + " AND create_time < " + timestamp + " ORDER BY create_time DESC LIMIT 0," + size:
-            "SELECT * FROM post WHERE user_id=" + user + " AND create_time < " + timestamp + " AND is_deleted = 0 ORDER BY create_time DESC LIMIT 0," + size;
+            "SELECT * FROM post WHERE user_id=" + user + " AND create_time < " + timestamp.getTime() + " ORDER BY create_time DESC LIMIT 0," + size:
+            "SELECT * FROM post WHERE user_id=" + user + " AND create_time < " + timestamp.getTime() + " AND is_deleted = 0 ORDER BY create_time DESC LIMIT 0," + size;
     }
 }

@@ -1,0 +1,59 @@
+
+dataSources:
+  db1:
+    dataSourceClassName: com.alibaba.druid.pool.DruidDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://122.9.7.252:3306/cloud_music_test?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: root
+    password: grf.2001
+  db2:
+    dataSourceClassName: com.alibaba.druid.pool.DruidDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://114.116.220.197:3306/cloud_music_test?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: root
+    password: grf.2001
+  db3:
+    dataSourceClassName: com.alibaba.druid.pool.DruidDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://122.9.36.231:3306/cloud_music_test?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: root
+    password: grf.2001
+  db4:
+    dataSourceClassName: com.alibaba.druid.pool.DruidDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://116.63.9.166:3306/cloud_music_test?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: root
+    password: grf.2001
+
+rules:
+  - !READWRITE_SPLITTING
+    dataSources:
+      ds0:
+        writeDataSourceName: db1
+        readDataSourceNames:
+            - db2
+        loadBalancerName: random
+      ds1:
+        writeDataSourceName: db3
+        readDataSourceNames:
+            - db4
+        loadBalancerName: random
+    loadBalancers:
+      random:
+        type: RANDOM
+  - !SHARDING
+    shardingAlgorithms:
+      database-inline:
+        type: INLINE
+        props:
+          algorithm-expression: ds$->{id%2}
+    tables:
+      user:
+        actualDataNodes: ds$->{0..1}.user
+        databaseStrategy:
+          standard:
+            shardingColumn: id
+            shardingAlgorithmName: database-inline
+props:
+  sql:
+    show: true

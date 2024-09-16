@@ -3,6 +3,7 @@ package cn.atsukoruo.societyservice.Controller;
 
 import cn.atsukoruo.common.utils.Response;
 import cn.atsukoruo.societyservice.Entity.Post;
+import cn.atsukoruo.societyservice.Service.LikeService;
 import cn.atsukoruo.societyservice.Service.PostService;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Param;
@@ -24,11 +25,17 @@ import java.util.List;
 @RestController
 public class PostController {
     private final PostService postService;
+    private final LikeService likeService;
 
-    public PostController(PostService postService) {
+    public PostController(PostService postService,
+                          LikeService likeService) {
         this.postService = postService;
+        this.likeService = likeService;
     }
 
+    /**
+     * 获取用户的 Feed 流，从 lastTimestamp 开始获取 size 个，
+     */
     @GetMapping("feed")
     public Response<List<Post>> feed(long lastTimestamp, int size) {
         int user = getUserFromAuth();
@@ -56,9 +63,12 @@ public class PostController {
     }
 
     @PostMapping("post/like")
-    public Response<Object> postLike() {
+    public Response<Object> postLike(Integer post) {
+        int user = getUserFromAuth();
+        likeService.asyncCommitLike(user, post);
         return null;
     }
+
 
     @PostMapping("post/comment")
     public Response<Object> postComment() {

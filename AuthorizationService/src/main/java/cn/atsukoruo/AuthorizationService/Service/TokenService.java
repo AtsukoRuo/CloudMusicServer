@@ -11,6 +11,7 @@ import cn.atsukoruo.common.config.TokenClaimsConfig;
 import cn.atsukoruo.common.entity.AccessTokenPayload;
 import cn.atsukoruo.common.entity.RefreshTokenPayload;
 import cn.atsukoruo.common.exception.BannedRefreshTokenException;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -19,6 +20,9 @@ import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.sql.Date;
@@ -26,6 +30,7 @@ import java.time.Duration;
 import java.util.Map;
 
 @Service
+@DS("mysql")
 public class TokenService {
      @Value("${jwt.signing-key}")
     private String signingKey;
@@ -51,30 +56,34 @@ public class TokenService {
         this.userMapper = userMapper;
     }
 
-
-    void insertVersion(int userId, String client, int version) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void insertVersion(int userId, String client, int version) {
         tokenMapper.insertVersion(userId, client, version);
     }
 
-    void insertBatch(int userId, int batch) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void insertBatch(int userId, int batch) {
         tokenMapper.insertBatch(userId, batch);
     }
 
     /**
      * 获取版本号 version
      */
-    Integer getVersion(int userId, String client) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Integer getVersion(int userId, String client) {
         return tokenMapper.selectVersion(userId, client);
     }
 
     /**
      * 获取批次号
      */
-    Integer getBatch(int userID) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Integer getBatch(int userID) {
         return tokenMapper.selectBatch(userID);
     }
 
-    int addVersion(int userId, String client, int diff) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public int addVersion(int userId, String client, int diff) {
         return tokenMapper.addVersion(userId, client, diff);
     }
 
@@ -104,6 +113,7 @@ public class TokenService {
      * 记得在调用完该函数后，调用 addVersion 来生成新的 version
      * 当 userID:client 不存在时，那么就直接返回
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void banAccessTokenForClient(int userId, String client) {
         Integer version =  tokenMapper.selectVersion(userId, client);
         if (version == null) {
@@ -134,6 +144,7 @@ public class TokenService {
      * 记得在调用完该函数后，调用 addVersion 来生成新的 version
      * 当 userID:client 不存在时，那么就直接返回
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void banRefreshTokenForClient(int userId, String client) {
         Integer version =  tokenMapper.selectVersion(userId, client);
         if (version == null) {

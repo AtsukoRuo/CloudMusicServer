@@ -6,10 +6,13 @@ import cn.atsukoruo.AuthorizationService.Exception.DuplicateUserException;
 import cn.atsukoruo.AuthorizationService.Exception.RegMatchException;
 import cn.atsukoruo.AuthorizationService.Repository.UserMapper;
 import com.aliyun.oss.*;
+import com.baomidou.dynamic.datasource.annotation.DS;
+import com.xiaoju.uemc.tinyid.client.utils.TinyId;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -26,7 +29,8 @@ import java.util.regex.Pattern;
 
 @Service
 @Slf4j
-final public class RegisterService {
+@DS("sharding")
+public class RegisterService {
     static final private String BUCKET_NAME = "atsukoruo-oss-image";
     static final private String LOCK_PREFIX = "register";
     private final UserMapper userMapper;
@@ -42,6 +46,7 @@ final public class RegisterService {
     private final static Pattern usernamePattern;
     private final static Pattern passwordPattern;
     private final static Pattern nicknamePattern;
+
 
     static {
         String usernameReg = "^[a-zA-Z0-9]{4,16}$";
@@ -67,6 +72,8 @@ final public class RegisterService {
         this.tokenService = tokenService;
     }
 
+    @Value("${tinyid.user}")
+    private String tinyIdUser;
 
     public User register(String username, String nickname, String password, MultipartFile file)
             throws DuplicateUserException, RegMatchException, IOException {
@@ -92,7 +99,6 @@ final public class RegisterService {
             imgUrl = uploadPicture(file);
             User user = buildUser(username, nickname, password, imgUrl);
             userMapper.insertUser(user);
-            log.debug("新创建的用户: " + user);
             tokenService.insertBatch(user.getId(), 1);
             transactionManager.commit(status);
         }  catch (Exception e) {
@@ -108,6 +114,9 @@ final public class RegisterService {
     }
 
     private String uploadPicture(MultipartFile file) throws IOException {
+        if (file == null) {
+            return "default.jpg";
+        }
         InputStream imageStream = file.getInputStream();
         String filename = generateRandomImageFilename(Objects.requireNonNull(file.getOriginalFilename()));
         ossClient.putObject(BUCKET_NAME, filename , imageStream);
@@ -122,6 +131,7 @@ final public class RegisterService {
 
     private User buildUser(String username, String nickname, String password, String imgUrl) {
         return User.builder()
+                .id(TinyId.nextId(tinyIdUser).intValue())
                 .username(username)
                 .nickname(nickname)
                 .password(passwordEncoder.encode("{bcrypt}"+password))

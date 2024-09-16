@@ -2,12 +2,15 @@ package cn.atsukoruo.AuthorizationService.Service;
 
 import cn.atsukoruo.AuthorizationService.Repository.UserMapper;
 import cn.atsukoruo.common.entity.UserInfo;
+import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.dynamic.datasource.annotation.DSTransactional;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 
 @Service
+@DS("sharding")
 public class UserService {
     private final UserMapper userMapper;
 

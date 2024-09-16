@@ -33,6 +33,9 @@ public interface RelationMapper {
     @Select("SELECT `to` FROM `relationship` WHERE `from`=#{user} AND (`relation`=1 OR `relation`=4) ORDER BY `to` LIMIT #{from}, #{size}")
     List<Integer> getFollowedUser(int user, int from, int size);
 
+    /**
+     * 获取指定用户的关注列表
+     */
     @Select("SELECT `to` FROM `relationship` WHERE `from`=#{user} AND (`relation` = 0 OR `relation` = 4) ORDER BY `to` LIMIT #{from}, #{size}")
     List<Integer> getFollowingUser(int user, int from, int size);
 }

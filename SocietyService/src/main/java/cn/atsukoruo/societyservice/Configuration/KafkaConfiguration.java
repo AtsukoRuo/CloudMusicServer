@@ -47,6 +47,14 @@ public class KafkaConfiguration {
     }
 
 
+    @Bean("like-consumer")
+    public Consumer<String, String> likeConsumer(ConsumerFactory<String, String> consumerFactory) {
+        Consumer<String, String> consumer = consumerFactory.createConsumer();
+        consumer.subscribe(List.of("like"));
+        this.likeConsumer = consumer;
+        return consumer;
+    }
+
 
     /**
      * 创建 消费者对象
@@ -81,9 +89,11 @@ public class KafkaConfiguration {
 
 
     private Consumer<String, String> postConsumer;
+    private Consumer<String, String> likeConsumer;
 
     @PreDestroy
     void destroyConsumer() {
         postConsumer.close();
+        likeConsumer.close();
     }
 }

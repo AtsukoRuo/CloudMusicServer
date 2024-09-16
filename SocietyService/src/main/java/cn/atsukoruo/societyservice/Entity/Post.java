@@ -18,4 +18,5 @@ public class Post {
     String imgUrl;
     Integer userId;
     boolean isDeleted;
+    boolean isLiked;
 }

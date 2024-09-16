@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
@@ -84,66 +85,9 @@ public class PostService {
     }
 
 
-    /**
-     *  获取 user 在 inbox 中的帖子，按照时间排序，获取 [from, from + size] 个
-     */
-    public List<Post> retrievePostFromInbox(int user, long timestamp, int size) {
-        // 保证从 inbox 中获取到的帖子都是没有标记过删除的。
-        List<Integer> ids = postMapper.getPostIdsFromInbox(user, new Timestamp(timestamp), size);
-        return postMapper.selectAllPostByIds(ids, false);
-    }
-
     @Value("${post.outbox.maxSize}")
     private int outboxMaxSize;
 
-    /**
-     * 获取 user 发布的帖子，按照时间排序，获取 [from, from + size] 个
-     * 其中涉及到缓存
-     */
-    public List<Post> retrievePostFromOutbox(int user, long timestamp, int size) {
-        long lastTimestamp = timestamp;
-        RScoredSortedSet<Integer> set =  redissonClient.getScoredSortedSet(buildOutboxCacheKey(user));
-        List<Post> results = new ArrayList<>();
-
-        // 重建缓存
-        if (!set.isExists()) {
-            RLock lock = redissonClient.getLock(buildOutboxCacheLockKey(user));
-            try {
-                lock.lock();
-                if (!set.isExists())
-                    rebuildOutboxCache(user);
-            } finally {
-                lock.unlock();
-            }
-        }
-
-        // 先从缓存从获取
-        if (lastTimestamp >= set.first()) {
-            // outbox 中不存储删除过的 post
-            List<Integer> ids = set
-                    .valueRangeReversed(lastTimestamp, true, Double.NEGATIVE_INFINITY, false)
-                    .stream().toList();
-            List<Post> posts =  postMapper.selectAllPostByIds(ids, false);
-            results.addAll(posts);
-            size -= posts.size();
-            if (posts.size() != 0)
-                lastTimestamp = posts.get(0).getCreateTime().getTime();
-        }
-
-        // 再从 outbox 中获取
-        if (size > 0) {
-            List<Post> posts = postMapper.retrievePost(user, new Timestamp(lastTimestamp), size, false);
-            results.addAll(posts);
-        }
-        return results;
-    }
-
-    private void rebuildOutboxCache(int user) {
-        List<Post> posts = postMapper.getPostInfoOfUser(user, new Timestamp(Long.MAX_VALUE), outboxMaxSize);
-        for (var post : posts) {
-            addPostToOutboxCache(user, post);
-        }
-    }
 
     private void addPostToOutboxCache(int user, Post post) {
         RScoredSortedSet<Integer> set = redissonClient.getScoredSortedSet(buildOutboxCacheKey(user));
@@ -259,19 +203,20 @@ public class PostService {
     }
 
     public List<Post> feed(int user, long timestamp, int size) {
-        // 帖子的三种来源：自己发布的帖子、收件箱、大 V 的发件箱
+        // 获取关注者列表
         List<Integer> followingUsers =  relationService.getFollowingUser(user, 0, Integer.MAX_VALUE);
+
+        // 区分出大 V 用户
         List<Integer> influencerUsers = new ArrayList<>();
-
-
         HashMap<Integer, Boolean> hasMoreForInfluencer = new HashMap<>();
         followingUsers.stream().filter(userProxyService::isInfluencer).forEach(influencer -> {
             hasMoreForInfluencer.put(influencer, true);
             influencerUsers.add(influencer);
         });
+
+
         AtomicBoolean hasMoreForMe = new AtomicBoolean(true);
         AtomicBoolean hasMoreForNormalUser = new AtomicBoolean(true);
-
         List<Post> res = new ArrayList<>();
         AtomicInteger hasMoreNum = new AtomicInteger(followingUsers.size());
         AtomicInteger total = new AtomicInteger(0);
@@ -279,10 +224,14 @@ public class PostService {
 
 
         while(total.get() < size) {
+            if (hasMoreNum.get() == 0) {
+                res.add(Post.builder().id(-1).build());
+                break;
+            }
             List<CompletableFuture<List<Post>>> futureList = new ArrayList<>();
             List<Post> posts = new ArrayList<>();
 
-            // 处理自己的帖子，直接从 outbox 中构建即可
+            // 处理自己的帖子
             if (hasMoreForMe.get()) {
                 CompletableFuture<List<Post>> myPost = CompletableFuture
                         .supplyAsync(() -> retrievePostFromOutbox(user, timestamp, size), executor)
@@ -339,15 +288,91 @@ public class PostService {
             CompletableFuture<Void> allFutures = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
             allFutures.join();
             // 进行排序
-            posts.sort(Comparator.comparing(Post::getCreateTime));
-
+            posts.sort(Comparator.comparing(Post::getCreateTime).reversed());
             res.addAll(posts);
-            if (hasMoreNum.get() == 0) {
-                res.add(0, null);
-                break;
-            }
             lastTimestamp.set(posts.get(posts.size() - 1).getCreateTime().getTime());
         }
-        return res;
+        return res.stream().limit(size).toList();
     }
+
+    /**
+     *  获取 user 在 inbox 中的帖子，按照时间排序，获取 [from, from + size] 个
+     */
+    public List<Post> retrievePostFromInbox(int user, long timestamp, int size) {
+        List<Post> results = new ArrayList<>();
+        boolean terminated = false;
+        while (size > 0 && !terminated) {
+            // 保证从 inbox 中获取到的帖子所属的用户，目前都是在关注列表中的。
+            List<Integer> ids = postMapper.getPostIdsFromInbox(user, new Timestamp(timestamp), size);
+            if (ids.size() < size) {
+                terminated = true;
+            }
+            List<Post> posts = postMapper.selectAllPostByIds(ids, false);
+            results.addAll(posts);
+            size -= posts.size();
+        }
+        return results;
+    }
+
+
+
+    /**
+     * 获取 user 发布的帖子，按照时间排序，获取 [from, from + size] 个
+     * 其中涉及到缓存
+     */
+    public List<Post> retrievePostFromOutbox(int user, long timestamp, int size) {
+        long lastTimestamp = timestamp;
+        RScoredSortedSet<Integer> set =  redissonClient.getScoredSortedSet(buildOutboxCacheKey(user));
+        List<Post> results = new ArrayList<>();
+
+        // 重建缓存
+        if (!set.isExists()) {
+            RLock lock = redissonClient.getLock(buildOutboxCacheLockKey(user));
+            try {
+                lock.lock();
+                // 防止同时构建
+                if (!set.isExists())
+                    rebuildOutboxCache(user);
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        // 先从缓存从获取
+        if (lastTimestamp >= set.first()) {
+            // outbox 中不存储删除过的 post
+            List<Integer> ids = set
+                    .valueRangeReversed(0, false, lastTimestamp, true)
+                    .stream().toList();
+            List<Post> posts =  postMapper.selectAllPostByIds(ids, false);
+            results.addAll(posts);
+            Post lastPost = posts.get(posts.size() - 1);
+            if (lastPost.getId() == -1) {
+                return results;
+            }
+            size -= posts.size();
+            lastTimestamp = lastPost.getCreateTime().getTime();
+        }
+
+        // 再从 outbox 中获取
+        if (size > 0) {
+            List<Post> posts = postMapper.retrievePost(user, new Timestamp(lastTimestamp), size, false);
+            results.addAll(posts);
+        }
+        return results;
+    }
+
+    private void rebuildOutboxCache(int user) {
+        List<Post> posts = postMapper.getPostInfoOfUser(user, new Timestamp(Long.MAX_VALUE), outboxMaxSize);
+        for (var post : posts) {
+            addPostToOutboxCache(user, post);
+        }
+        if (posts.size() < outboxMaxSize) {
+            // 添加一个特殊的帖子，避免缓存击穿
+            addPostToOutboxCache(
+                    user,
+                    Post.builder().id(-1).createTime(new Timestamp(0)).build());
+        }
+    }
+
 }

@@ -1,5 +1,6 @@
 package cn.atsukoruo.AuthorizationService.Repository;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 @Mapper
 @Repository
+@DS("mysql")
 public interface TokenMapper {
     @Select("SELECT version FROM token_version where user_id = #{userId} and client = #{client}")
     public Integer selectVersion(int userId, String client);

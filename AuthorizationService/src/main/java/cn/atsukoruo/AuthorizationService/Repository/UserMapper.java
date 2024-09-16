@@ -3,6 +3,7 @@ package cn.atsukoruo.AuthorizationService.Repository;
 
 import cn.atsukoruo.AuthorizationService.Entity.User;
 import cn.atsukoruo.common.entity.UserInfo;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import org.apache.ibatis.annotations.*;
 import org.springframework.stereotype.Repository;
 
@@ -10,6 +11,7 @@ import java.util.List;
 
 @Mapper
 @Repository
+@DS("sharding")
 public interface UserMapper {
     @Select("SELECT is_influencer FROM user WHERE id=#{userId}")
     Boolean isInfluencer(int userId);
@@ -30,10 +32,7 @@ public interface UserMapper {
     @Select("SELECT COUNT(*) FROM user WHERE username=#{username}")
     int doesExistUser(String username);
 
-    @Options(useGeneratedKeys = true, keyProperty = "id")
-    @Insert("INSERT INTO user(username, password, avatar_url, is_banned, is_influencer, create_time, role, nickname)" +
-            "VALUES(#{username}, #{password}, #{avatar_url}, #{isBanned}, #{isInfluencer}, #{createTime}, #{role}, #{nickname})" )
+    @Insert("INSERT INTO user(id, username, password, avatar_url, is_banned, is_influencer, create_time, role, nickname)" +
+            "VALUES(#{id}, #{username}, #{password}, #{avatar_url}, #{isBanned}, #{isInfluencer}, #{createTime}, #{role}, #{nickname})" )
     void insertUser(User user);
-
-
 }

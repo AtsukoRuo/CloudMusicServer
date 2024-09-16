@@ -6,6 +6,8 @@ import org.springframework.core.task.TaskDecorator;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 
 @Configuration
@@ -34,8 +36,8 @@ public class ThreadPoolExecutorConfig {
         return executor;
     }
 
-    @Bean("post-thread-pool")
-    public Executor postTaskExecutor() {
+    @Bean("message-thread-pool")
+    public Executor messageTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(CORE_THREAD_SIZE);
         executor.setMaxPoolSize(MAX_THREAD_SIZE);
@@ -45,6 +47,11 @@ public class ThreadPoolExecutorConfig {
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
         executor.initialize();
         return executor;
+    }
+
+    @Bean
+    public ScheduledExecutorService scheduledExecutorService() {
+        return new ScheduledThreadPoolExecutor(Runtime.getRuntime().availableProcessors());
     }
 }
 

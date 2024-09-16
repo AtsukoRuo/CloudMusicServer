@@ -6,10 +6,22 @@ spring:
   application:
     name: authorization-service
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
-    password: grf.2001
-    url: jdbc:mysql://122.9.7.252:3306/cloud_music_test?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
+    type: com.alibaba.druid.pool.DruidDataSource
+    dynamic:
+      primary: mysql
+      strict: false
+      datasource:
+        mysql:
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://122.9.7.252:3306/cloud_music_test?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
+          username: root
+          password: grf.2001
+        sharding: # 从这里指定 sharding
+          url: jdbc:shardingsphere:classpath:sharding-sphere-config.yaml
+          driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
+
+
+
 
 mybatis:
   configuration:
@@ -46,3 +58,6 @@ eureka:
 
 server:
   port: 30001
+
+tinyid:
+  user: test
