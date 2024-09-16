@@ -62,7 +62,7 @@ public class RelationService {
             }
             if (!userService.isInfluencer(favoriteUserId)) {
                 // 如果对方不是大 V，那么就将它的所有帖子同步推送过来
-                postService.copyAllPostsToInbox(favoriteUserId, followerId);
+                postService.copyAllPostIndexToInbox(favoriteUserId, followerId);
             }
             transactionManager.commit(status);
         } catch (Exception e) {
@@ -92,7 +92,7 @@ public class RelationService {
                 }
                 if (!userService.isInfluencer(unfollowedUser)) {
                     // 对方不是大 V，那么就从自己的收件箱中删除有关他的任何帖子
-                    postService.deletePostFromUserInInbox(user, unfollowedUser);
+                    postService.deletePostIndexInInbox(user, unfollowedUser);
                 }
             }
             transactionManager.commit(status);
@@ -126,7 +126,7 @@ public class RelationService {
                     relationMapper.updateRelation(blacklistedUser, user, RelationConfig.BLACKLISTED);
                     if (!userService.isInfluencer(blacklistedUser)) {
                         // 对方不是大 V，那么就从自己的收件箱中删除有关他的任何帖子
-                        postService.deletePostFromUserInInbox(user, blacklistedUser);
+                        postService.deletePostIndexInInbox(user, blacklistedUser);
                     }
                     break;
                 case RelationConfig.BLACKLISTING:

@@ -6,8 +6,6 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.*;
@@ -47,15 +45,6 @@ public class KafkaConfiguration {
     }
 
 
-    @Bean("like-consumer")
-    public Consumer<String, String> likeConsumer(ConsumerFactory<String, String> consumerFactory) {
-        Consumer<String, String> consumer = consumerFactory.createConsumer();
-        consumer.subscribe(List.of("like"));
-        this.likeConsumer = consumer;
-        return consumer;
-    }
-
-
     /**
      * 创建 消费者对象
      */
@@ -89,11 +78,9 @@ public class KafkaConfiguration {
 
 
     private Consumer<String, String> postConsumer;
-    private Consumer<String, String> likeConsumer;
 
     @PreDestroy
     void destroyConsumer() {
         postConsumer.close();
-        likeConsumer.close();
     }
 }

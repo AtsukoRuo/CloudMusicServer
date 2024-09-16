@@ -49,3 +49,5 @@ post:
   outbox:
     # 为了测试，将 maxSize 设置为 1
     maxSize: 1
+  inbox:
+    maxSize: 1

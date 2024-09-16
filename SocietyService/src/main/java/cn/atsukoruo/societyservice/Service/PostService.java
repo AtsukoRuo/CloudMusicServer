@@ -2,6 +2,7 @@ package cn.atsukoruo.societyservice.Service;
 
 import cn.atsukoruo.common.utils.JsonUtils;
 import cn.atsukoruo.societyservice.Entity.Post;
+import cn.atsukoruo.societyservice.Entity.PostIndex;
 import cn.atsukoruo.societyservice.Repository.PostMapper;
 import com.aliyun.oss.ClientException;
 import com.aliyun.oss.OSS;
@@ -14,11 +15,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,7 +32,6 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 public class PostService {
     private final PostMapper postMapper;
-    private final PlatformTransactionManager transactionManager;
     private final RedissonClient redissonClient;
     private final UserProxyService userProxyService;
     private final KafkaTemplate<String, String> kafkaTemplate;
@@ -44,15 +41,13 @@ public class PostService {
     static final private String BUCKET_NAME = "atsukoruo-oss-image";
 
     public PostService(PostMapper postMapper,
-                       PlatformTransactionManager transactionManager,
                        RedissonClient redissonClient,
                        OSS ossClient,
                        UserProxyService userProxyService,
                        KafkaTemplate<String, String> kafkaTemplate,
                        @Lazy RelationService relationService,
-                       @Qualifier("post-thread-pool") Executor executor) {
+                       @Qualifier("message-thread-pool") Executor executor) {
         this.postMapper = postMapper;
-        this.transactionManager = transactionManager;
         this.redissonClient = redissonClient;
         this.ossClient = ossClient;
         this.userProxyService = userProxyService;
@@ -63,96 +58,117 @@ public class PostService {
 
 
     /**
-     * 将 outbox 所指定的用户的发件箱中的所有帖子，发送到 inbox 所指定用户的收件箱中
+     * 将 outbox index 复制到 Inbox 中
+     * 副作用：尝试向 inbox cache 添加该索引
      */
-    public void copyAllPostsToInbox(int outbox, int inbox) {
-        List<Post> posts = postMapper.getPostInfoOfUser(outbox);
-        postMapper.copyAllPostsToInbox(outbox, inbox, posts);
+    @Transactional
+    public void copyAllPostIndexToInbox(int outbox, int inbox) {
+        List<PostIndex> indexes = postMapper.getAllValidPostIndexFromInbox(
+                outbox,
+                new Timestamp(Long.MAX_VALUE),
+                Integer.MAX_VALUE);
+        postMapper.insertAllPostIndexToInbox(inbox, indexes);
+        RScoredSortedSet<Integer> set = redissonClient.getScoredSortedSet(buildInboxCacheKey(inbox));
+        for (var index : indexes) {
+            addPostIndexToCache(set, inboxMaxSize, index);
+        }
     }
 
     /**
-     * 从 userId 的收件箱中，移除 removedUser 所有的帖子
+     * 从 userId 的 inbox，移除 removedUser 所有的帖子
+     * 副作用：删除 inbox Cache
      */
-    public void deletePostFromUserInInbox(int user, int removedUser) {
-        postMapper.deletePostFromUserInInbox(user, removedUser);
+    public void deletePostIndexInInbox(int user, int removedUser) {
+        RScoredSortedSet<Integer> set = redissonClient.getScoredSortedSet(buildInboxCacheKey(user));
+        set.delete();
+        postMapper.deletePostIndexInInbox(user, removedUser);
     }
 
     /**
-     * 直接从数据库中获取 user 发布的帖子，按照时间排序，获取 [from, from + size] 个
+     * 从 outbox 中获取 user 发布的帖子，按照时间排序
      */
     public List<Post> retrievePost(int user, long timestamp, int size) {
-        return postMapper.retrievePost(user, new Timestamp(timestamp), size, false);
+        return postMapper.retrievePostFromUser(user, new Timestamp(timestamp), size);
     }
 
 
     @Value("${post.outbox.maxSize}")
     private int outboxMaxSize;
+    @Value("${post.inbox.maxSize}")
+    private int inboxMaxSize;
 
+    private void addPostIndexToInboxCache(int user, PostIndex index) {
+        RScoredSortedSet<Integer> set = redissonClient.getScoredSortedSet(buildInboxCacheKey(user));
+        addPostIndexToCache(set, inboxMaxSize, index);
+    }
 
-    private void addPostToOutboxCache(int user, Post post) {
-        RScoredSortedSet<Integer> set = redissonClient.getScoredSortedSet(buildOutboxCacheKey(user));
+    private void addPostIndexToCache(RScoredSortedSet<Integer> set, int maxSize, PostIndex index) {
         if (!set.isExists())
             return;
-        set.add(Double.longBitsToDouble(post.getCreateTime().getTime()),
-                post.getId());
-        while (set.size() > outboxMaxSize) {
-            // 删除分数最小的成员
-            set.pollFirst();
+        double score = Double.longBitsToDouble(index.getCreateTime().getTime());
+        // 优先填满缓存
+        if (set.size() < maxSize) {
+            set.add(score, index.getId());
+            return;
         }
+        double firstScore = set.firstScore();
+        if (firstScore >= score) {
+            return;
+        }
+        set.add(score, index.getId());
+        set.pollFirst();
+    }
+
+    private void addPostIndexToOutboxCache(int user, PostIndex index) {
+        RScoredSortedSet<Integer> set = redissonClient.getScoredSortedSet(buildOutboxCacheKey(user));
+        addPostIndexToCache(set, outboxMaxSize, index);
     }
 
     /**
-     * 从 userId 的发件箱中，软删除 postId 的帖子，并删除 outbox 缓存（有的话）中的对应帖子
+     * 从 userId 的 outbox index 中，软删除 postId 的帖子
+     * 副作用：尝试从 outbox Cache 中删除该帖子
      */
-    public void deletePostSoftlyInOutbox(int user, int post) {
-        TransactionStatus status = transactionManager.getTransaction(new DefaultTransactionDefinition());
-        try {
-            postMapper.deletePostSoftlyInOutbox(user, post);
-            String outboxKey = buildOutboxCacheKey(user);
-            RScoredSortedSet<Integer> set = redissonClient.getScoredSortedSet(outboxKey);
-            if (set.isExists())
-                set.remove(outboxKey);
-            transactionManager.commit(status);
-        } catch (Exception e){
-            transactionManager.rollback(status);
-            throw e;
-        }
+    @Transactional
+    public void deletePost(int user, int post) {
+        postMapper.deletePostIndexSoftly(user, post);
+        String outboxKey = buildOutboxCacheKey(user);
+        RScoredSortedSet<Integer> set = redissonClient.getScoredSortedSet(outboxKey);
+        if (set.isExists())
+            set.remove(post);
     }
 
+    /**
+     * 向 outbox 、 outbox index、outbox cache 更新缓存
+     */
+    @Transactional
     public void publishPost(int user, String content, MultipartFile file) throws IOException {
-        TransactionStatus status = transactionManager.getTransaction(new DefaultTransactionDefinition());
         String imgUrl = null;
         try {
             imgUrl = uploadPicture(file);
-            Post post =  buildPost(user, content, imgUrl);
-            long timestamp = post.getCreateTime().getTime();
-            Integer postId =  postMapper.insertPost(post);
+            PostIndex index = buildPostIndex(user);
+            Post post =  buildPost(index.getId(), content, imgUrl);
+            long timestamp = index.getCreateTime().getTime();
+            int postId = index.getId();
+            postMapper.insertPostIndex(index);
+            post.setPostId(postId);
+            postMapper.insertPost(post);
             if (!userProxyService.isInfluencer(user)) {
-                // 对于普通用户，还要异步推送到各个关注者的 inbox 缓存中
-                asyncPublishPostToFollowedUser(user, postId, timestamp);
+                // 对于普通用户，要异步推送到各个关注者的 inbox 缓存中
+                asyncPublishPostIndexToFollowedUser(user, postId, timestamp);
             }
-
-            // 对于大 V 用户，直接写入到 outbox 缓存中即可
-            // 普通用户也将帖子写入到 outbox 缓存中
-            addPostToOutboxCache(user, post);
-            transactionManager.commit(status);
+            addPostIndexToOutboxCache(user, index);
         } catch (Exception e) {
             if (!(e instanceof ClientException || e instanceof OSSException) && imgUrl != null) {
                 ossClient.deleteObject(BUCKET_NAME, imgUrl);
             }
-            transactionManager.rollback(status);
             throw e;
         }
     }
 
     /**
-     * 向发件人的关注者的 inbox 推送帖子（普通用户）
-     * 使用 Kafka 做异步推送
-     * @param user      发件人
-     * @param postId    帖子的 ID
-     * @param timestamp  帖子的创建时间
+     * 向发件人的关注者的 inbox 推送 postIndex
      */
-    private void asyncPublishPostToFollowedUser(int user, int postId, long timestamp) {
+    private void asyncPublishPostIndexToFollowedUser(int user, int postId, long timestamp) {
         Map<String, Object> map = Map.of("user", user, "postId", postId, "timestamp", timestamp);
         String value = JsonUtils.toJson(map);
         String key = String.valueOf(user);
@@ -161,14 +177,18 @@ public class PostService {
     }
 
     /**
-     * 向发件人的关注者（不包括自己）的 inbox 添加该帖子
-     * @param user      发件人
-     * @param postId    帖子的 ID
-     * @param timestamp  帖子的创建时间
+     * 向发件人的关注者的 inbox 添加该 postIndex
+     * 副作用，尝试向 inbox cache 添加 post
      */
-    public void syncPublishPostToFollowedUser(int user, int postId, long timestamp) {
+    @Transactional
+    public void syncPublishPostIndexToFollowedUser(int user, int postId, long timestamp) {
         List<Integer> users = relationService.getFollowedUser(user, 0, Integer.MAX_VALUE);
         postMapper.publishPostToFollowedUser(user, postId, timestamp, users);
+        PostIndex index = PostIndex.builder().userId(user)
+                .createTime(new Timestamp(timestamp)).id(postId).build();
+        for (var followedUser : users) {
+            addPostIndexToInboxCache(followedUser, index);
+        }
     }
 
     private String uploadPicture(MultipartFile file) throws IOException {
@@ -184,23 +204,23 @@ public class PostService {
         return UUID.randomUUID() + ext;
     }
 
-    private Post buildPost(int user, String content, String imgUrl) {
+    private Post buildPost(int post, String content, String imgUrl) {
         return Post.builder()
-                .id(0)
+                .postId(post)
                 .content(content)
                 .imgUrl(imgUrl)
+                .build();
+    }
+
+    private PostIndex buildPostIndex(int user) {
+        return PostIndex.builder()
                 .createTime(new Timestamp(System.currentTimeMillis()))
+                .userId(user)
                 .isDeleted(false)
-                .userId(user).build();
+                .build();
     }
 
-    private String buildOutboxCacheKey(int user) {
-        return "ob" + user;
-    }
 
-    private String buildOutboxCacheLockKey(int user) {
-        return "obl" + user;
-    }
 
     public List<Post> feed(int user, long timestamp, int size) {
         // 获取关注者列表
@@ -217,7 +237,7 @@ public class PostService {
 
         AtomicBoolean hasMoreForMe = new AtomicBoolean(true);
         AtomicBoolean hasMoreForNormalUser = new AtomicBoolean(true);
-        List<Post> res = new ArrayList<>();
+        List<PostIndex> res = new ArrayList<>();
         AtomicInteger hasMoreNum = new AtomicInteger(followingUsers.size());
         AtomicInteger total = new AtomicInteger(0);
         AtomicLong lastTimestamp = new AtomicLong(timestamp);
@@ -225,16 +245,16 @@ public class PostService {
 
         while(total.get() < size) {
             if (hasMoreNum.get() == 0) {
-                res.add(Post.builder().id(-1).build());
+                res.add(PostIndex.builder().id(-1).build());
                 break;
             }
             List<CompletableFuture<List<Post>>> futureList = new ArrayList<>();
-            List<Post> posts = new ArrayList<>();
+            List<PostIndex> posts = new ArrayList<>();
 
             // 处理自己的帖子
             if (hasMoreForMe.get()) {
                 CompletableFuture<List<Post>> myPost = CompletableFuture
-                        .supplyAsync(() -> retrievePostFromOutbox(user, timestamp, size), executor)
+                        .supplyAsync(() -> retrievePostIndexFromOutbox(user, timestamp, size), executor)
                         .thenApply(results -> {
                             if (results.size() < size) {
                                 // 没有更多的帖子了
@@ -252,7 +272,7 @@ public class PostService {
             // 处理普通用户的帖子
             if (hasMoreForNormalUser.get()) {
                 CompletableFuture<List<Post>> future = CompletableFuture
-                        .supplyAsync(() -> retrievePostFromInbox(user, lastTimestamp.get(), size), executor)
+                        .supplyAsync(() -> retrievePostIndexFromInbox(user, lastTimestamp.get(), size), executor)
                         .thenApply(results -> {
                             int num = results.size();
                             if (num < size) {
@@ -271,7 +291,7 @@ public class PostService {
                 if (!hasMoreForInfluencer.get(influencer))
                     continue;
                 CompletableFuture<List<Post>> future = CompletableFuture
-                        .supplyAsync(() -> retrievePostFromOutbox(influencer, lastTimestamp.get(), size))
+                        .supplyAsync(() -> retrievePostIndexFromInbox(influencer, lastTimestamp.get(), size))
                         .thenApply(results -> {
                             int num = results.size();
                             if (num < size) {
@@ -288,42 +308,82 @@ public class PostService {
             CompletableFuture<Void> allFutures = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
             allFutures.join();
             // 进行排序
-            posts.sort(Comparator.comparing(Post::getCreateTime).reversed());
+            posts.sort(Comparator.comparing(PostIndex::getCreateTime).reversed());
             res.addAll(posts);
             lastTimestamp.set(posts.get(posts.size() - 1).getCreateTime().getTime());
         }
-        return res.stream().limit(size).toList();
+        List<Integer> indexList = res.stream().limit(size).map(PostIndex::getId).toList();
+        return postMapper.retrievePostByIds(indexList);
     }
 
     /**
-     *  获取 user 在 inbox 中的帖子，按照时间排序，获取 [from, from + size] 个
+     *  获取 user 在 inbox 中的帖子 index，按照时间排序
      */
-    public List<Post> retrievePostFromInbox(int user, long timestamp, int size) {
-        List<Post> results = new ArrayList<>();
-        boolean terminated = false;
-        while (size > 0 && !terminated) {
-            // 保证从 inbox 中获取到的帖子所属的用户，目前都是在关注列表中的。
-            List<Integer> ids = postMapper.getPostIdsFromInbox(user, new Timestamp(timestamp), size);
-            if (ids.size() < size) {
-                terminated = true;
+    public List<PostIndex> retrievePostIndexFromInbox(int user, long timestamp, int size) {
+        long lastTimestamp = timestamp;
+        RScoredSortedSet<Integer> set =  redissonClient.getScoredSortedSet(buildInboxCacheKey(user));
+        List<PostIndex> results = new ArrayList<>();
+
+        // 重建缓存
+        if (!set.isExists()) {
+            RLock lock = redissonClient.getLock(buildInboxCacheLockKey(user));
+            try {
+                lock.lock();
+                // 防止同时构建
+                if (!set.isExists())
+                    rebuildInboxCache(user);
+            } finally {
+                lock.unlock();
             }
-            List<Post> posts = postMapper.selectAllPostByIds(ids, false);
+        }
+
+        double score = Double.longBitsToDouble(lastTimestamp);
+        // 先从缓存从获取
+        if (score >= set.firstScore()) {
+            List<PostIndex> indexes = set
+                    .entryRange(0, false, score, true)
+                    .stream().map(entry -> PostIndex.builder()
+                            .createTime(new Timestamp(Double.doubleToLongBits(entry.getScore())))
+                            .id(entry.getValue())
+                            .build()).toList();
+
+            results.addAll(indexes);
+            PostIndex lastPostIndex = indexes.get(indexes.size() - 1);
+            if (lastPostIndex.getId() == -1) {
+                return results;
+            }
+            size -= indexes.size();
+            lastTimestamp = lastPostIndex.getCreateTime().getTime();
+        }
+
+        // 再从 inbox 中获取
+        if (size > 0) {
+            List<PostIndex> posts = postMapper.getAllValidPostIndexFromInbox(user, new Timestamp(lastTimestamp), size);
             results.addAll(posts);
-            size -= posts.size();
         }
         return results;
     }
 
+    private void rebuildInboxCache(int user) {
+        List<PostIndex> indexes = postMapper.getAllValidPostIndexFromInbox(user, new Timestamp(Long.MAX_VALUE), inboxMaxSize);
+        for (var index : indexes) {
+            addPostIndexToInboxCache(user, index);
+        }
+        if (indexes.size() < inboxMaxSize) {
+            // 添加一个特殊的帖子，避免缓存击穿
+            PostIndex nullIndex = PostIndex.builder().id(-1).build();
+            addPostIndexToInboxCache(user, nullIndex);
+        }
+    }
 
 
     /**
-     * 获取 user 发布的帖子，按照时间排序，获取 [from, from + size] 个
-     * 其中涉及到缓存
+     * 获取 user 在 outbox 中的帖子 index，按照时间排序
      */
-    public List<Post> retrievePostFromOutbox(int user, long timestamp, int size) {
+    public List<PostIndex> retrievePostIndexFromOutbox(int user, long timestamp, int size) {
         long lastTimestamp = timestamp;
         RScoredSortedSet<Integer> set =  redissonClient.getScoredSortedSet(buildOutboxCacheKey(user));
-        List<Post> results = new ArrayList<>();
+        List<PostIndex> results = new ArrayList<>();
 
         // 重建缓存
         if (!set.isExists()) {
@@ -338,41 +398,52 @@ public class PostService {
             }
         }
 
+        double score = Double.longBitsToDouble(lastTimestamp);
         // 先从缓存从获取
-        if (lastTimestamp >= set.first()) {
+        if (lastTimestamp >= set.firstScore()) {
             // outbox 中不存储删除过的 post
-            List<Integer> ids = set
-                    .valueRangeReversed(0, false, lastTimestamp, true)
-                    .stream().toList();
-            List<Post> posts =  postMapper.selectAllPostByIds(ids, false);
-            results.addAll(posts);
-            Post lastPost = posts.get(posts.size() - 1);
-            if (lastPost.getId() == -1) {
+            List<PostIndex> indexes = set
+                    .entryRange(0, false, score, true)
+                    .stream().map(entry -> PostIndex.builder()
+                            .createTime(new Timestamp(Double.doubleToLongBits(entry.getScore())))
+                            .id(entry.getValue())
+                            .build()).toList();
+            results.addAll(indexes);
+            PostIndex lastPostIndex = indexes.get(indexes.size() - 1);
+            if (lastPostIndex.getId() == -1) {
                 return results;
             }
-            size -= posts.size();
-            lastTimestamp = lastPost.getCreateTime().getTime();
+            size -= indexes.size();
+            lastTimestamp = lastPostIndex.getCreateTime().getTime();
         }
 
         // 再从 outbox 中获取
         if (size > 0) {
-            List<Post> posts = postMapper.retrievePost(user, new Timestamp(lastTimestamp), size, false);
+            List<PostIndex> posts = postMapper.getAllValidPostIndexFromOutbox(user, new Timestamp(lastTimestamp), size);
             results.addAll(posts);
         }
         return results;
     }
 
     private void rebuildOutboxCache(int user) {
-        List<Post> posts = postMapper.getPostInfoOfUser(user, new Timestamp(Long.MAX_VALUE), outboxMaxSize);
-        for (var post : posts) {
-            addPostToOutboxCache(user, post);
+        List<PostIndex> indexes = postMapper.getAllValidPostIndexFromOutbox(user, new Timestamp(Long.MAX_VALUE), outboxMaxSize);
+        for (var index : indexes) {
+            addPostIndexToOutboxCache(user, index);
         }
-        if (posts.size() < outboxMaxSize) {
+        if (indexes.size() < outboxMaxSize) {
             // 添加一个特殊的帖子，避免缓存击穿
-            addPostToOutboxCache(
-                    user,
-                    Post.builder().id(-1).createTime(new Timestamp(0)).build());
+            PostIndex nullIndex = PostIndex.builder().id(-1).build();
+            addPostIndexToOutboxCache(user, nullIndex);
         }
     }
 
+    private String buildOutboxCacheKey(int user) {
+        return "ob" + user;
+    }
+
+    private String buildOutboxCacheLockKey(int user) {
+        return "obl" + user;
+    }
+    private String buildInboxCacheKey(int user) {return "ib" + user; }
+    private String buildInboxCacheLockKey(int user) { return "ibl" + user; }
 }

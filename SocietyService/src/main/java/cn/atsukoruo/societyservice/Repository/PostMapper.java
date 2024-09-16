@@ -1,39 +1,23 @@
 package cn.atsukoruo.societyservice.Repository;
 
 import cn.atsukoruo.societyservice.Entity.Post;
+import cn.atsukoruo.societyservice.Entity.PostIndex;
 import org.apache.ibatis.annotations.*;
+import org.bouncycastle.util.Times;
 import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Service;
 
-import java.sql.Date;
-import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.List;
 
 @Mapper
 @Repository
 public interface PostMapper {
-
-
     /**
-     * 获取所指定用户的所有帖子的摘要信息，仅包括 id、create_time，但是过滤掉标记为删除的帖子。
+     * 将 postIndex 插入到 Inbox 中
      */
-    @Select("SELECT `id`, `create_time` FROM `post` WHERE `user_id`=#{user} AND `is_deleted` = 0")
-    List<Post> getPostInfoOfUser(int user);
-
-    /**
-     * 获取所指定用户的所有帖子的摘要信息，仅包括 id、create_time，但是过滤掉标记为删除的帖子。并降序排序
-     */
-    @Select("SELECT `id`, `create_time` FROM `post` WHERE `user_id`=#{user} AND `is_deleted` = 0 AND create_time < #{timestamp} ORDER BY create_time DESC LIMIT 0, #{size}")
-    List<Post> getPostInfoOfUser(int user, Timestamp timestamp, int size);
-
-    /**
-     * 选取指定 ID 的帖子，并按降序排序
-     */
-    @SelectProvider(type = PostProvider.class, method = "selectAllPostByIds")
-    List<Post> selectAllPostByIds(List<Integer> ids, boolean keepDeleted);
-
-    @InsertProvider(type = PostProvider.class, method = "copyAllPostsToInbox")
-    void copyAllPostsToInbox(Integer from, Integer to, List<Post> posts);
+    @InsertProvider(type = PostProvider.class, method = "insertAllPostIndexToInbox")
+    void insertAllPostIndexToInbox(Integer inbox, List<PostIndex> posts);
 
     /**
      * @param from      发帖人
@@ -45,26 +29,41 @@ public interface PostMapper {
     void publishPostToFollowedUser(Integer from, Integer postId,  long timestamp, List<Integer> ids);
 
     @Delete("DELETE FROM inbox WHERE from_id=#{removedUserId} AND user_id=#{userId}")
-    void deletePostFromUserInInbox(Integer userId, Integer removedUserId);
+    void deletePostIndexInInbox(Integer userId, Integer removedUserId);
 
     @Options(useGeneratedKeys = true, keyProperty = "id")
-    @Insert("INSERT post(id, create_time, content, img_url, user_id, is_deleted)" +
-            "VALUES(#{id}, #{createTime}, #{content}, #{imgUrl}, #{userId}, #{isDeleted})")
-    Integer insertPost(Post post);
+    @Insert("INSERT post_index(id, create_time, user_id, is_deleted)" +
+            "VALUES(#{id}, #{createTime}, #{userId}, #{isDeleted})")
+    void insertPostIndex(PostIndex index);
 
+    @Insert("INSERT post(post_id, content, img_url, user_id) VALUES(#{postId}, #{content}, #{imgUrl}, #{userId})")
+    void insertPost(Post post);
 
-    @Update("UPDATE `post` SET `is_deleted` = 1 WHERE `id` = #{post} AND `user_id`=#{user}")
-    void deletePostSoftlyInOutbox(int user, int post);
+    @Update("UPDATE `post_index` SET `is_deleted` = 1 WHERE `id` = #{post} AND `user_id`=#{user}")
+    void deletePostIndexSoftly(int user, int post);
+
 
     /**
      * 获取指定用户的帖子，降序排序
+     * 过滤掉删除的帖子
      */
-    @SelectProvider(type = PostProvider.class, method = "retrievePost")
-    List<Post> retrievePost(int user, Timestamp timestamp, int size, boolean keepDeleted);
+    @Select("SELECT * FROM post WHERE user_id=#{user} AND create_time < #{timestamp} ORDER BY create_time DESC LIMIT 0,#{size}")
+    List<Post> retrievePostFromUser(int user, Timestamp timestamp, int size);
+
+
+    @InsertProvider(type = PostProvider.class, method = "retrievePostByIds")
+    List<Post> retrievePostByIds(List<Integer> ids);
 
     /**
-     * 获取指定用户的 inbox，降序排序
+     * 获取所指定用户的 outbox 中所有的帖子索引，但是过滤掉标记为删除的帖子。
      */
-    @Select("SELECT * FROM inbox WHERE user_id=#{user} AND create_time < #{timestamp} ORDER BY create_time DESC LIMIT 0, #{size}")
-    List<Integer> getPostIdsFromInbox(int user, Timestamp timestamp, int size);
+    @Select("SELECT * FROM `post_index` WHERE `user_id`=#{user} AND `is_deleted` = 0 AND create_time < #{timestamp} ORDER BY create_time DESC LIMIT 0, #{size}")
+    List<PostIndex> getAllValidPostIndexFromOutbox(int user, Timestamp timestamp, int size);
+
+    /**
+     * 获取所指定用户的 inbox 中所有的帖子索引，但是过滤掉标记为删除的帖子。
+     */
+    @Select("SELECT * FROM `inbox` WHERE `user_id`=#{user} AND `is_deleted` = 0 AND create_time < #{timestamp} ORDER BY create_time DESC LIMIT 0, #{size}")
+    List<PostIndex> getAllValidPostIndexFromInbox(int user, Timestamp timestamp, int size);
+
 }

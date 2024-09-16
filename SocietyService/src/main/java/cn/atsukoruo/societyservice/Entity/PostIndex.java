@@ -4,16 +4,16 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.sql.Timestamp;
 
+import java.sql.Timestamp;
 
 @Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
-public class Post {
-    String content;
-    String imgUrl;
-    Integer postId;
+@AllArgsConstructor
+public class PostIndex {
+    Integer id;
+    Timestamp createTime;
     Integer userId;
+    Boolean isDeleted;
 }
