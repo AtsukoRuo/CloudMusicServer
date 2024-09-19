@@ -11,7 +11,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 
 @Configuration
-public class ThreadPoolExecutorConfig {
+public class ThreadPoolExecutorConfiguration {
 
     private static final int CORE_THREAD_SIZE = Runtime.getRuntime().availableProcessors() + 1;
 
