@@ -30,7 +30,7 @@ import java.time.Duration;
 import java.util.Map;
 
 @Service
-@DS("mysql")
+@DS("token")
 public class TokenService {
      @Value("${jwt.signing-key}")
     private String signingKey;

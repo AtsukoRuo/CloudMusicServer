@@ -61,7 +61,7 @@ public class KafkaMessageReaper {
                 }
             } catch (Exception e) {
                 log.error(e.toString());
-                if (e instanceof  IllegalStateException) {
+                if (e instanceof IllegalStateException || e instanceof InterruptedException) {
                     e.printStackTrace();
                     break;
                 }

@@ -29,16 +29,6 @@ import java.util.Map;
 @EnableAsync
 @Slf4j
 public class SocietyServiceApplication {
-    // 帖子发布功能
-    // 帖子删除功能
-    // TODO 帖子获取功能
-    // TODO 评论
-    // TODO 点赞、取消点赞
-    // 获取关注的人、获取粉丝、获取关注数、获取粉丝数
-    // 关注
-    // 取关
-    // 拉黑
-    // 取消拉黑
     public static void main(String[] args) {
         SpringApplication.run(SocietyServiceApplication.class, args);
     }

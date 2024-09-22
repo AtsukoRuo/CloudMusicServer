@@ -17,4 +17,7 @@ public class ErrorCodeConfig {
 
     public static final int FAKE_TOKEN =                0x0000000A;
     public static final int BLACKLIST_ERROR =           0x0000000B;
+
+    public static final int UNBIND_VX =                 0x0000000C;
+    public static final int DUPLICATED_BIND_VX =        0x0000000D;
 }

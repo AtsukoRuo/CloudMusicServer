@@ -35,4 +35,16 @@ public interface UserMapper {
     @Insert("INSERT INTO user(id, username, password, avatar_url, is_banned, is_influencer, create_time, role, nickname)" +
             "VALUES(#{id}, #{username}, #{password}, #{avatar_url}, #{isBanned}, #{isInfluencer}, #{createTime}, #{role}, #{nickname})" )
     void insertUser(User user);
+
+    @Select("SELECT * FROM user WHERE vx_openId=#{vxOpenId}")
+    User getUserByVxOpenId(String vxOpenId);
+
+    @Update("UPDATE user SET vx_openId='' WHERE vx_openId=#{vxOpenId}")
+    void deleteOpenIdField(String vxOpenId);
+
+    @Update("UPDATE user SET vx_openId=#{vxOpenId} WHERE id=#{user}")
+    void insertVxOpenIdToUser(Integer user, String vxOpenId);
+
+    @Select("SELECT vx_openId FROM user WHERE id=#{user}")
+    String getVxOpenIdFromUser(Integer user);
 }

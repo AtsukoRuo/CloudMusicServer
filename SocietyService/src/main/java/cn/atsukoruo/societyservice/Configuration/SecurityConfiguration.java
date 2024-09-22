@@ -29,7 +29,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
-import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -69,7 +68,7 @@ public class SecurityConfiguration  {
     static public AuthorizationDecision check(Supplier<Authentication> authenticationSupplier,
                                               RequestAuthorizationContext requestAuthorizationContext) {
         Collection<? extends GrantedAuthority> authorities = authenticationSupplier.get().getAuthorities();
-        boolean isGranted = authorities.stream().anyMatch(a -> a.getAuthority().equals("user"));
+        boolean isGranted = authorities.stream().anyMatch(a -> a.getAuthority().equals("user") || a.getAuthority().equals("admin"));
         return new AuthorizationDecision(isGranted);
     }
 }

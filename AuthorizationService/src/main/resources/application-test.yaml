@@ -8,20 +8,17 @@ spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     dynamic:
-      primary: mysql
+      primary: token
       strict: false
       datasource:
-        mysql:
+        token:
           driver-class-name: com.mysql.cj.jdbc.Driver
-          url: jdbc:mysql://122.9.7.252:3306/cloud_music_test?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
+          url: jdbc:mysql://122.9.7.252:3306/cloud_music_token?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
           username: root
           password: grf.2001
         sharding: # 从这里指定 sharding
           url: jdbc:shardingsphere:classpath:sharding-sphere-config.yaml
           driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
-
-
-
 
 mybatis:
   configuration:
@@ -61,3 +58,13 @@ server:
 
 tinyid:
   user: test
+
+netty:
+  uri: ws://localhost:30012/cloud-music
+  serviceId: 1
+
+wx:
+  mp:
+    appid: wx63a48d9539eebbeb
+    secret: 7170dd6ded8e2d1b51dbafe3f987931d
+    token: atsukoruo.cn
