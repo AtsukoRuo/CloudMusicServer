@@ -14,11 +14,12 @@
 	<description>CloudMusic</description>
 	<packaging>pom</packaging>
 	<modules>
-		<module>AuthorizationService</module>
-		<module>Common</module>
-		<module>SocietyService</module>
-		<module>MusicService</module>
-		<module>ServiceSupporter</module>
+		<module>authorization-service</module>
+		<module>common</module>
+		<module>society-service</module>
+		<module>music-service</module>
+		<module>eureka-server</module>
+		<module>netty-gateway</module>
 	</modules>
 	<url/>
 	<licenses>

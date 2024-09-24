@@ -7,13 +7,15 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="SocietyService" />
-        <module name="MusicService" />
-        <module name="AuthorizationService" />
+        <module name="vendor-service" />
+        <module name="common" />
         <module name="UserService" />
-        <module name="ServiceSupporter" />
-        <module name="WebsocketServer" />
-        <module name="Common" />
+        <module name="society-service" />
+        <module name="music-service" />
+        <module name="authorization-service" />
+        <module name="netty-gateway" />
+        <module name="zookeeper-primitives" />
+        <module name="eureka-server" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
@@ -23,15 +25,17 @@
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
-      <module name="AuthorizationService" options="-parameters" />
       <module name="CloudMusic" options="" />
-      <module name="Common" options="-parameters" />
       <module name="EurekaServer" options="-parameters" />
-      <module name="MusicService" options="-parameters" />
-      <module name="ServiceSupporter" options="-parameters" />
-      <module name="SocietyService" options="-parameters" />
       <module name="UserService" options="-parameters" />
-      <module name="WebsocketServer" options="-parameters" />
+      <module name="authorization-service" options="-parameters" />
+      <module name="common" options="-parameters" />
+      <module name="eureka-server" options="-parameters" />
+      <module name="music-service" options="-parameters" />
+      <module name="netty-gateway" options="-parameters" />
+      <module name="society-service" options="-parameters" />
+      <module name="vendor-service" options="-parameters" />
+      <module name="zookeeper-primitives" options="-parameters" />
     </option>
   </component>
 </project>

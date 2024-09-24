@@ -13,6 +13,8 @@
         <option value="$PROJECT_DIR$/MusicService/pom.xml" />
         <option value="$PROJECT_DIR$/ServiceSupporter/pom.xml" />
         <option value="$PROJECT_DIR$/WebsocketServer/pom.xml" />
+        <option value="$PROJECT_DIR$/vendor-service/pom.xml" />
+        <option value="$PROJECT_DIR$/zookeeper-primitives/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">
