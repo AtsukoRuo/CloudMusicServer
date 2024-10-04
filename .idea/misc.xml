@@ -15,12 +15,18 @@
         <option value="$PROJECT_DIR$/WebsocketServer/pom.xml" />
         <option value="$PROJECT_DIR$/vendor-service/pom.xml" />
         <option value="$PROJECT_DIR$/zookeeper-primitives/pom.xml" />
+        <option value="$PROJECT_DIR$/order-service/pom.xml" />
+        <option value="$PROJECT_DIR$/product-service/pom.xml" />
+        <option value="$PROJECT_DIR$/config-center/pom.xml" />
+        <option value="$PROJECT_DIR$/config-server/pom.xml" />
+        <option value="$PROJECT_DIR$/gateway/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">
       <set>
         <option value="$PROJECT_DIR$/EurekaServer/pom.xml" />
         <option value="$PROJECT_DIR$/UserService/pom.xml" />
+        <option value="$PROJECT_DIR$/config-center/pom.xml" />
       </set>
     </option>
   </component>

@@ -7,18 +7,23 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="vendor-service" />
-        <module name="common" />
         <module name="UserService" />
         <module name="society-service" />
         <module name="music-service" />
-        <module name="authorization-service" />
+        <module name="product-service" />
         <module name="netty-gateway" />
         <module name="zookeeper-primitives" />
         <module name="eureka-server" />
+        <module name="config-server" />
+        <module name="inventory-service" />
+        <module name="common" />
+        <module name="authorization-service" />
+        <module name="order-service" />
+        <module name="gateway" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="config-center" target="17" />
       <module name="EurekaServer" target="17" />
       <module name="UserService" target="17" />
     </bytecodeTargetLevel>
@@ -30,11 +35,16 @@
       <module name="UserService" options="-parameters" />
       <module name="authorization-service" options="-parameters" />
       <module name="common" options="-parameters" />
+      <module name="config-center" options="-parameters" />
+      <module name="config-server" options="-parameters" />
       <module name="eureka-server" options="-parameters" />
+      <module name="gateway" options="-parameters" />
+      <module name="inventory-service" options="-parameters" />
       <module name="music-service" options="-parameters" />
       <module name="netty-gateway" options="-parameters" />
+      <module name="order-service" options="-parameters" />
+      <module name="product-service" options="-parameters" />
       <module name="society-service" options="-parameters" />
-      <module name="vendor-service" options="-parameters" />
       <module name="zookeeper-primitives" options="-parameters" />
     </option>
   </component>

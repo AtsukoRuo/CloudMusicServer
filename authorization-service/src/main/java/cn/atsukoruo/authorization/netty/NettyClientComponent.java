@@ -7,9 +7,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class NettyClientComponent {
-    @Value("${netty.uri}")
-    String uris;
 
+    // 同一个微服务下所有实例，共用 serviceId
     @Value("${netty.serviceId}")
     Long serviceId;
 
@@ -17,7 +16,7 @@ public class NettyClientComponent {
 
     @PostConstruct
     public void startServer() {
-        nettyClient = new NettyClient(uris, serviceId);
+        nettyClient = new NettyClient(serviceId);
         try {
             nettyClient.start();
         } catch (Exception e) {

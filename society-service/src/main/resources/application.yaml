@@ -1,6 +1,6 @@
 spring:
   application:
-    name: SocietyService
+    name: society-service
   profiles:
     active: test
 server:

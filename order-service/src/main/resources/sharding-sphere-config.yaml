@@ -1,0 +1,37 @@
+
+dataSources:
+  db0:
+    dataSourceClassName: com.alibaba.druid.pool.DruidDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://122.9.7.252:3306/cloud_music_order?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: root
+    password: grf.2001
+  db1:
+    dataSourceClassName: com.alibaba.druid.pool.DruidDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://122.9.36.231:3306/cloud_music_order?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: root
+    password: grf.2001
+
+
+rules:
+  - !BROADCAST
+    tables:
+      - undo_log
+  - !SHARDING
+    shardingAlgorithms:
+      complex-db:
+        type: CLASS_BASED
+        props:
+          strategy: complex
+          algorithmClassName: cn.atsukoruo.orderservice.configuration.OrderComplexKeyShardingAlgorithm
+    tables:
+      order:
+        actualDataNodes: db$->{0..1}.order
+        databaseStrategy:
+          complex:
+            shardingColumns: order_number,user
+            shardingAlgorithmName: complex-db
+props:
+  sql:
+    show: true

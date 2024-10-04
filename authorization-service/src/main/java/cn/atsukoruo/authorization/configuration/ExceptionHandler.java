@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ControllerAdvice;
-
 import java.io.IOException;
 
 @Slf4j
@@ -23,6 +22,6 @@ public class ExceptionHandler {
         Response<Object> value = Response.fail(
                 ErrorCodeConfig.UNKNOWN_ERROR,
                 "捕获到未处理的异常：" + e.getClass().toString());;
-        objectMapper.writeValue(response.getOutputStream(), value);
+        objectMapper.writeValue(response.getWriter(), value);
     }
 }

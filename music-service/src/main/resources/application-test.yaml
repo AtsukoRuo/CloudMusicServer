@@ -4,7 +4,7 @@ spring:
       max-file-size: 10MB
       max-request-size: 100MB
   application:
-    name: MusicService
+    name: music-service
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
@@ -51,5 +51,6 @@ eureka:
       zone: linyi
     prefer-ip-address: true
     hostname: localhost
+    instance-id: ${eureka.instance.hostname}:${spring.application.name}:${server.port}
 
 

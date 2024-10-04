@@ -1,0 +1,27 @@
+eureka:
+  server:
+    enable-self-preservation: false
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+    region: shandong
+    availability-zones:
+      shandong: linyi
+    service-url:
+      linyi: http://eureka-server-cluster-ip:30010/eureka/
+  instance:
+    hostname: eureka-server
+    prefer-ip-address: true
+
+
+logging:
+  config: classpath:log4j2.xml
+  level:
+    root: INFO
+    javax.activation: INFO
+    org.apache.catalina: INFO
+    org.apache.commons.beanutils.converters: INFO
+    org.apache.coyote.http11.Http11Processor: INFO
+    org.apache.http: INFO
+    org.apache.tomcat: INFO
+    org.springframework: INFO

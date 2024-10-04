@@ -1,0 +1,77 @@
+spring:
+  application:
+    name: order-service
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    dynamic:
+      primary: sharding
+      strict: false
+      datasource:
+        sharding: # 从这里指定 sharding
+          url: jdbc:shardingsphere:classpath:sharding-sphere-config.yaml
+          driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
+  cloud:
+    client:
+      hostname: localhost
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+  type-handlers-package: cn.atsukoruo.orderservice.configuration
+
+jwt:
+  signing-key: oJJB72CmVtKFf5h8i63xYHzPcob96L12
+
+eureka:
+  client:
+    region: shandong
+    availability-zones:
+      shandong: linyi
+    service-url:
+      linyi: http://localhost:30010/eureka/
+  instance:
+    metadata-map:
+      zone: linyi
+    instance-id: ${eureka.instance.hostname}:${spring.application.name}:${server.port}
+    hostname: localhost
+
+logging:
+  config: classpath:log4j2.xml
+  level:
+    root: INFO
+    javax.activation: INFO
+    org.apache.catalina: INFO
+    org.apache.commons.beanutils.converters: INFO
+    org.apache.coyote.http11.Http11Processor: INFO
+    org.apache.http: INFO
+    org.apache.tomcat: INFO
+    org.springframework: INFO
+
+seata:
+  enabled: true
+  config:
+    type: file
+  registry:
+    type: file
+
+  service:
+    vgroup-mapping:
+      default: seata-server
+
+    disable-global-transaction: false
+    grouplist:
+      seata-server: 122.9.36.231:8091
+  tx-service-group: default
+  enable-auto-data-source-proxy: true
+  data-source-proxy-mode: AT
+
+server:
+  port: 30006
+
+
+xunhupay:
+  version: 1.1
+  appid: 201906167882
+  notifyUrl: http://atsukoruo.ss5.tunnelfrp.com/pay/success
+  key: d8e18a355a02c6dede47bbb19134c902
+  payUrl: https://api.xunhupay.com/payment/do.html

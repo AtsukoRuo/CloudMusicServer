@@ -1,0 +1,73 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: grf.2001
+    url: jdbc:mysql://116.63.9.166:3306/cloud_music_product?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
+  application:
+    name: product-service
+  cloud:
+    client:
+      hostname: localhost
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+
+jwt:
+  signing-key: oJJB72CmVtKFf5h8i63xYHzPcob96L12
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    region: shandong
+    availability-zones:
+      shandong: linyi
+    service-url:
+      linyi: http://localhost:30010/eureka/
+  instance:
+    metadata-map:
+      zone: linyi
+    instance-id: ${eureka.instance.hostname}:${spring.application.name}:${server.port}
+    hostname: localhost
+
+
+logging:
+  config: classpath:log4j2.xml
+  level:
+    root: INFO
+    javax.activation: INFO
+    org.apache.catalina: INFO
+    org.apache.commons.beanutils.converters: INFO
+    org.apache.coyote.http11.Http11Processor: INFO
+    org.apache.http: INFO
+    org.apache.tomcat: INFO
+    org.springframework: INFO
+
+seata:
+  enabled: true
+  config:
+    type: file
+  registry:
+    type: file
+
+  service:
+    vgroup-mapping:
+      default: seata-server
+
+    disable-global-transaction: false
+    grouplist:
+      seata-server: 122.9.36.231:8091
+  tx-service-group: default
+  enable-auto-data-source-proxy: true
+  data-source-proxy-mode: AT
+server:
+  port: 30004
+
+management:
+  zipkin:
+    tracing:
+      endpoint: http://122.9.36.231:9411/api/v2/spans
+  tracing:
+    sampling:
+      probability: 1.0

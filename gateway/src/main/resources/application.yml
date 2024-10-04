@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: gateway
+
+eureka:
+  client:
+    region: shandong
+    availability-zones:
+      shandong: linyi
+    service-url:
+      linyi: http://eureka-server-cluster-ip:30010/eureka/
+  instance:
+    metadata-map:
+      zone: linyi
+    prefer-ip-address: true
+    hostname: gateway
+    instance-id: ${eureka.instance.hostname}:${spring.application.name}:${server.port}
+
+server:
+  port: 30014

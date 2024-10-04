@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: config-server
+  cloud:
+    config:
+      server:
+        git:
+          username: root
+          password: grf.2001
+          uri: http://124.222.155.115:20010/root/cloudmusic-config.git
+        default-label: main
+
+server:
+  port: 30013
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    region: shandong
+    availability-zones:
+      shandong: linyi
+    service-url:
+      linyi: http://localhost:30010/eureka/
+  instance:
+    metadata-map:
+      zone: linyi
+    hostname: localhost
+    instance-id: ${eureka.instance.hostname}:${spring.application.name}:${server.port}

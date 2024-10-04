@@ -16,7 +16,7 @@ import java.util.function.Consumer;
 public class ZookeeperPrimitives {
     private final ZooKeeper client;
     private final ZkConfig config;
-
+    private final Consumer<List<NodeChangeInfo>> consumer;
     private final static ObjectMapper objectMapper = new ObjectMapper();
 
     // 对于服务注册者，使用该构造函数即可
@@ -27,6 +27,7 @@ public class ZookeeperPrimitives {
     // 对于服务发现者，使用该构造函数
     // 当 path 下的节点发生变化后（增加，删除），会调用 consumer 回调方法
     public ZookeeperPrimitives(Consumer<List<NodeChangeInfo>> consumer, ZkConfig zkConfig) {
+
         ZooKeeper tempZkClient = null;
         try {
             Watcher watcher = null;
@@ -48,6 +49,7 @@ public class ZookeeperPrimitives {
             this.client = tempZkClient;
             this.serviceProviders = new HashSet<>();
             this.config = zkConfig;
+            this.consumer = consumer;
         }
     }
 
@@ -84,7 +86,9 @@ public class ZookeeperPrimitives {
      */
     public List<Metadata> discovery() throws InterruptedException, KeeperException {
         List<Metadata> ret = new ArrayList<>();
-        List<String> zkChildren = client.getChildren(this.config.path(), true);
+        List<String> zkChildren = client.getChildren(
+                this.config.path(),
+                this.consumer != null);
         zkChildren.forEach(name -> {
             try {
                 String path = this.config.path() + "/" + name;

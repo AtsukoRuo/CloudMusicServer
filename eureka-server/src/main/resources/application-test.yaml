@@ -1,4 +1,6 @@
 eureka:
+  server:
+    enable-self-preservation: false
   client:
     register-with-eureka: false
     fetch-registry: false
@@ -8,7 +10,8 @@ eureka:
     service-url:
       linyi: http://localhost:30010/eureka/
   instance:
-    hostname: localhost
+    hostname: eureka-server
+    prefer-ip-address: true
 
 
 logging:

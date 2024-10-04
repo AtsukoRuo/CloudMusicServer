@@ -9,6 +9,7 @@
           <option value="cn-atsukoruo-client" />
           <option value="cn-atsukoruo-userId" />
           <option value="cn-atsukoruo-refreshToken" />
+          <option value="cn-atsukoruo-accessToken" />
         </set>
       </option>
     </inspection_tool>

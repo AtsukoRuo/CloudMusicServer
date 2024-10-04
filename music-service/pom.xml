@@ -9,8 +9,8 @@
     </parent>
     <artifactId>music-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>MusicService</name>
-    <description>MusicService</description>
+    <name>music-service</name>
+    <description>music-service</description>
     <url/>
     <licenses>
         <license/>
@@ -116,7 +116,6 @@
             <groupId>cn.atsukoruo</groupId>
             <artifactId>common</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-            <scope>compile</scope>
         </dependency>
 
         <!-- OSS 存储 -->
@@ -160,6 +159,28 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>com.spotify</groupId>
+                <artifactId>dockerfile-maven-plugin</artifactId>
+                <version>1.4.10</version>
+                <executions>
+                    <execution>
+                        <id>default</id>
+                        <goals>
+                            <goal>build</goal>
+                            <goal>push</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- 这里的 repository 指定了 image 的名字-->
+                    <repository>${project.artifactId}</repository>
+                    <tag>${project.version}</tag>
+                    <buildArgs>
+                        <JAR_FILE>${project.build.finalName}.jar</JAR_FILE>
+                    </buildArgs>
+                </configuration>
             </plugin>
         </plugins>
     </build>

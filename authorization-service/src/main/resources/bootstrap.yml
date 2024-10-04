@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: authorization-service
+  cloud:
+    config:
+      discovery:
+        enabled: true
+        service-id: config-server
+      fail-fast: false
+  profiles:
+    active: prod
+server:
+  port: 30001
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    region: shandong
+    availability-zones:
+      shandong: linyi
+    service-url:
+      linyi: http://eureka-server-cluster-ip:30010/eureka/
+  instance:
+    metadata-map:
+      zone: linyi
+    instance-id: ${eureka.instance.hostname}:${spring.application.name}:${server.port}
+    prefer-ip-address: true
+    hostname: localhost

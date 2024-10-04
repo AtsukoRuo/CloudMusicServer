@@ -1,8 +1,8 @@
 spring:
   application:
-    name: ServiceSupporter
+    name: eureka-server
   profiles:
-    active: test
+    active: prod
 server:
   port: 30010
 

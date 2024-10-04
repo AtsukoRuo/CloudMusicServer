@@ -42,6 +42,8 @@ eureka:
     metadata-map:
       zone: linyi
     prefer-ip-address: true
+    instance-id: ${eureka.instance.hostname}:${spring.application.name}:${server.port}
+    hostname: localhost
 
 post:
   outbox:

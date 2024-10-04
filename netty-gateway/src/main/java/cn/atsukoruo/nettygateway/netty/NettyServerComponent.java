@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class NettyServerComponent {
-    @Value("${websocket.port}")
+    @Value("${netty.port}")
     private int port;
 
     @Value("${netty.id}")

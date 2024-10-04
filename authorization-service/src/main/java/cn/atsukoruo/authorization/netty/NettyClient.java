@@ -1,5 +1,7 @@
 package cn.atsukoruo.authorization.netty;
 
+import cn.atsukoruo.zookeeperprimitives.ZkConfig;
+import cn.atsukoruo.zookeeperprimitives.ZookeeperPrimitives;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -13,6 +15,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
 import io.netty.handler.codec.http.websocketx.WebSocketVersion;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.zookeeper.KeeperException;
 
 import java.net.URI;
 import java.util.Arrays;
@@ -28,16 +31,14 @@ public class NettyClient {
      * Netty Server ID 到 Connection 的映射
      */
     public final static Map<Integer, Channel> channelMap = new HashMap<>();
-    private final List<String> serverUris;
     private final Long serviceId;
     private  EventLoopGroup group;
 
-    public NettyClient(String uris, Long serviceId) {
-        serverUris = Arrays.stream(uris.split(",")).toList();
+    public NettyClient(Long serviceId) {
         this.serviceId = serviceId;
     }
 
-    public void start() {
+    public void start() throws InterruptedException, KeeperException {
         group = new NioEventLoopGroup();
         Bootstrap bootstrap = new Bootstrap();
 
@@ -54,10 +55,16 @@ public class NettyClient {
                     }
                 });
 
-        int id = 1;
-        for (var uri : serverUris) {
-            connect(uri, bootstrap, id);
-            id++;
+
+        ZkConfig zkConfig = new ZkConfig("114.116.204.34:2181,122.9.36.231:2181,116.63.9.166:2181", "/netty", 30000);
+        ZookeeperPrimitives zk = new ZookeeperPrimitives(zkConfig);
+        for (var metadata : zk.discovery()) {
+            log.info("netty 实例的服务发现: " + metadata);
+            String ip =  metadata.ip();
+            String port = metadata.port();
+            String id = metadata.id();
+            String url = "ws://" + ip + ":" + port + "/cloud-music";
+            connect(url, bootstrap, Integer.valueOf(id));
         }
     }
 

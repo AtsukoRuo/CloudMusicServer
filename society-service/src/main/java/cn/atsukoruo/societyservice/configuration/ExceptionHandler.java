@@ -23,6 +23,6 @@ public class ExceptionHandler {
         Response<Object> value = Response.fail(
                 ErrorCodeConfig.UNKNOWN_ERROR,
                 "捕获到未处理的异常：" + e.getClass().toString());;
-        objectMapper.writeValue(response.getOutputStream(), value);
+        objectMapper.writeValue(response.getWriter(), value);
     }
 }

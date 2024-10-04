@@ -15,12 +15,19 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>authorization-service</module>
-		<module>common</module>
 		<module>society-service</module>
 		<module>music-service</module>
 		<module>eureka-server</module>
 		<module>netty-gateway</module>
+		<module>inventory-service</module>
+		<module>order-service</module>
+		<module>product-service</module>
+		<module>common</module>
+		<module>zookeeper-primitives</module>
 	</modules>
+	<properties>
+		<java.version>17</java.version>
+	</properties>
 	<url/>
 	<licenses>
 		<license/>
@@ -34,9 +41,6 @@
 		<tag/>
 		<url/>
 	</scm>
-	<properties>
-		<java.version>17</java.version>
-	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -60,6 +64,7 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 		<!-- jwt -->
 			<groupId>io.jsonwebtoken</groupId>
@@ -76,25 +81,5 @@
 			<artifactId>jjwt-jackson</artifactId>
 			<version>0.11.5</version>
 		</dependency>
-
-
 	</dependencies>
-
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-				<configuration>
-					<excludes>
-						<exclude>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</exclude>
-					</excludes>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
-
 </project>

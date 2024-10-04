@@ -9,10 +9,8 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RedisConfiguration {
-
-
     @Bean
-    public RedissonClient redissonClient() {
+    public RedissonClient defaultRedissonClient() {
         Config config = new Config();
         ClusterServersConfig clusterServersConfig = config.useClusterServers()
                 .addNodeAddress(
@@ -27,5 +25,4 @@ public class RedisConfiguration {
         clusterServersConfig.setPassword("grf.2001");//设置密码
         return Redisson.create(config);
     }
-
 }

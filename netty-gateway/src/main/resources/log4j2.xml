@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <properties>
+        <property name="LOG_HOME">C:/logs/netty-gateway</property>
+    </properties>
+
+    <Appenders>
+        <Console name="consoleAppender" target="SYSTEM_OUT">
+            <PatternLayout
+                    pattern="%style{%d{HH:mm:ss}}{bright,green} %highlight{%-5level} [%style{%t}{bright,blue}] %style{%C}{bright,yellow}: %msg%n%style{%throwable}{red}"
+                    disableAnsi="false" noConsoleNoAnsi="false"/>
+        </Console>
+
+        <RollingFile name="allFileAppender"
+                     fileName="${LOG_HOME}/all.log"
+                     filePattern="${LOG_HOME}/$${date:yyyy-MM}/all-%d{yyyy-MM-dd}-%i.log">
+            <PatternLayout>
+                <pattern>%d %p %C{} [%t] %m%n</pattern>
+            </PatternLayout>
+
+            <Policies>
+                <!--设置日志基础文件大小，超过该大小就触发日志文件滚动更新-->
+                <SizeBasedTriggeringPolicy size="1MB"/>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+            <!--设置日志的文件个数上限，不设置默认为7个，超过大小后会被覆盖-->
+            <DefaultRolloverStrategy max="3"/>
+        </RollingFile>
+    </Appenders>
+
+    <Loggers>
+        <!-- 根日志设置 -->
+        <Root level="debug">
+            <AppenderRef ref="consoleAppender" level="debug"/>
+            <AppenderRef ref="allFileAppender" level="all"/>
+        </Root>
+
+        <!--spring日志-->
+        <Logger name="org.springframework" level="debug"/>
+
+        <!--druid数据源日志-->
+        <Logger name="druid.sql.Statement" level="warn"/>
+
+        <!-- mybatis日志 -->
+        <Logger name="com.mybatis" level="warn"/>
+        <Logger name="org.hibernate" level="warn"/>
+        <Logger name="com.zaxxer.hikari" level="info"/>
+        <Logger name="org.quartz" level="info"/>
+        <Logger name="com.andya.demo" level="debug"/>
+    </Loggers>
+</Configuration>

@@ -20,4 +20,5 @@ public class ErrorCodeConfig {
 
     public static final int UNBIND_VX =                 0x0000000C;
     public static final int DUPLICATED_BIND_VX =        0x0000000D;
+    public static final int OVERSELL_ERROR =            0x0000000E;
 }
